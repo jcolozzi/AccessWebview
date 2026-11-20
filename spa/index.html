@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AccessWebview SPA</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --panel-hover: #273549;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-dark: #0284c7;
+      --success: #22c55e;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 20px 24px;
+      min-height: 100vh;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+    }
+    .title-group h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 10px var(--success);
+    }
+    .subtitle {
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .badge {
+      background: rgba(56, 189, 248, 0.14);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: var(--accent);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .stat-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+    }
+    .stat-label { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .stat-value { font-size: 24px; font-weight: 700; margin-top: 4px; }
+    .composer {
+      display: grid;
+      grid-template-columns: 1fr 130px 115px auto auto;
+      gap: 10px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+    input, select, button {
+      font-family: inherit;
+      font-size: 13px;
+      border-radius: 7px;
+      padding: 8px 12px;
+      outline: none;
+    }
+    input, select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    input:focus, select:focus { border-color: var(--accent); }
+    button {
+      cursor: pointer;
+      border: none;
+      font-weight: 600;
+      background: var(--accent-dark);
+      color: white;
+      transition: filter 0.15s;
+    }
+    button:hover { filter: brightness(1.12); }
+    button.secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .task-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .task-row:hover { background: var(--panel-hover); }
+    .task-row.done .task-title { text-decoration: line-through; color: var(--muted); }
+    .task-left { display: flex; align-items: center; gap: 12px; }
+    .check {
+      width: 18px; height: 18px; border-radius: 5px;
+      border: 2px solid var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+    }
+    .task-row.done .check { background: var(--success); border-color: var(--success); color: #052e16; }
+    .pills { display: flex; gap: 8px; align-items: center; font-size: 11.5px; }
+    .pill {
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.15);
+      color: var(--muted);
+    }
+    .pill.High { background: rgba(239, 68, 68, 0.18); color: #fca5a5; }
+    .pill.Medium { background: rgba(245, 158, 11, 0.18); color: #fcd34d; }
+    .pill.Low { background: rgba(34, 197, 94, 0.18); color: #86efac; }
+    .status-bar {
+      margin-top: 16px;
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title-group">
+      <h1><span class="dot"></span> AccessWebview Zero-Dependency Engine</h1>
+      <div class="subtitle">Direct <code>Office16\WebView2Loader.dll</code> + <code>DispCallFunc</code> + <code>AddHostObjectToScript</code> + Virtual Host SPA</div>
+    </div>
+    <div id="host-badge" class="badge">Connecting to Access...</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-label">DAO Tasks in tblWv2Tasks</div>
+      <div id="stat-total" class="stat-value">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Completed</div>
+      <div id="stat-done" class="stat-value">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Last RPC Latency</div>
+      <div id="stat-ms" class="stat-value">-</div>
+    </div>
+  </div>
+
+  <div class="composer">
+    <input id="new-title" type="text" placeholder="Add a new DAO record directly from JavaScript..." />
+    <select id="new-cat">
+      <option value="Architecture">Architecture</option>
+      <option value="Runtime">Runtime</option>
+      <option value="DAO Bridge">DAO Bridge</option>
+      <option value="UI/UX">UI/UX</option>
+    </select>
+    <select id="new-prio">
+      <option value="High">High</option>
+      <option value="Medium" selected>Medium</option>
+      <option value="Low">Low</option>
+    </select>
+    <button id="btn-add" onclick="addTask()">+ Add Record</button>
+    <button id="btn-ping" class="secondary" onclick="sendPostMessage()">Ping postMessage</button>
+  </div>
+
+  <div id="task-list" class="task-list"></div>
+
+  <div class="status-bar">
+    <span id="rpc-status">Ready</span>
+    <span id="origin-label"></span>
+  </div>
+
+  <script>
+    document.getElementById('origin-label').textContent = 'Origin: ' + window.location.origin;
+
+    window.chrome.webview.addEventListener('message', (ev) => {
+      document.getElementById('rpc-status').textContent = 'Received from Access VBA: ' + ev.data;
+    });
+
+    function renderTasks(tasks, elapsedMs) {
+      const list = document.getElementById('task-list');
+      list.innerHTML = '';
+      let doneCount = 0;
+      tasks.forEach(t => {
+        if (t.done) doneCount++;
+        const row = document.createElement('div');
+        row.className = 'task-row' + (t.done ? ' done' : '');
+        row.onclick = () => toggleTask(t.id);
+        row.innerHTML = `
+          <div class="task-left">
+            <div class="check">${t.done ? '✓' : ''}</div>
+            <div class="task-title">${escapeHtml(t.title)}</div>
+          </div>
+          <div class="pills">
+            <span class="pill">${escapeHtml(t.category)}</span>
+            <span class="pill ${escapeHtml(t.priority)}">${escapeHtml(t.priority)}</span>
+          </div>
+        `;
+        list.appendChild(row);
+      });
+      document.getElementById('stat-total').textContent = tasks.length;
+      document.getElementById('stat-done').textContent = doneCount;
+      document.getElementById('stat-ms').textContent = elapsedMs.toFixed(1) + ' ms';
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    async function initApp() {
+      try {
+        const vba = window.chrome.webview.hostObjects.vba;
+        const infoJson = await vba.GetHostInfoJson();
+        const info = JSON.parse(infoJson);
+        document.getElementById('host-badge').textContent = `${info.host} ${info.version} (${info.arch})`;
+
+        const t0 = performance.now();
+        const tasksJson = await vba.GetTasksJson();
+        const ms = performance.now() - t0;
+        renderTasks(JSON.parse(tasksJson), ms);
+        document.getElementById('rpc-status').textContent = 'Connected via chrome.webview.hostObjects.vba';
+      } catch (err) {
+        document.getElementById('host-badge').textContent = 'Bridge Error';
+        document.getElementById('rpc-status').textContent = String(err);
+      }
+    }
+
+    async function addTask() {
+      const titleEl = document.getElementById('new-title');
+      const catEl = document.getElementById('new-cat');
+      const prioEl = document.getElementById('new-prio');
+      if (!titleEl.value.trim()) return;
+      const t0 = performance.now();
+      const resJson = await window.chrome.webview.hostObjects.vba.AddTask(titleEl.value, catEl.value, prioEl.value);
+      const ms = performance.now() - t0;
+      titleEl.value = '';
+      renderTasks(JSON.parse(resJson), ms);
+    }
+
+    async function toggleTask(id) {
+      const t0 = performance.now();
+      const resJson = await window.chrome.webview.hostObjects.vba.ToggleTask(id);
+      const ms = performance.now() - t0;
+      renderTasks(JSON.parse(resJson), ms);
+    }
+
+    function sendPostMessage() {
+      window.chrome.webview.postMessage(JSON.stringify({ type: 'ping', ts: Date.now() }));
+    }
+
+    initApp();
+  </script>
+</body>
+</html>

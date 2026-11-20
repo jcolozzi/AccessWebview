@@ -1,0 +1,1785 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>AccessWebview — Developer Documentation &amp; Reference Guide</title><style>/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+html, body {
+	font-family: var(--markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", system-ui, "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+body {
+	padding-top: 1em;
+}
+
+/* Reset margin top for elements */
+h1, h2, h3, h4, h5, h6,
+p, ol, ul, pre {
+	margin-top: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	font-weight: 600;
+	margin-top: 24px;
+	margin-bottom: 16px;
+	line-height: 1.25;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+.code-line-diff {
+	border-radius: 2px;
+	box-shadow: -4px 0 0 transparent;
+}
+
+.code-line-diff-added {
+	background-color: var(--vscode-diffEditor-insertedTextBackground);
+	box-shadow: -4px 0 0 var(--vscode-diffEditorGutter-insertedLineBackground);
+}
+
+.code-line-diff-deleted {
+	background-color: var(--vscode-diffEditor-removedTextBackground);
+	box-shadow: -4px 0 0 var(--vscode-diffEditorGutter-removedLineBackground);
+}
+
+.vscode-high-contrast .code-line-diff-added {
+	outline: 1px solid var(--vscode-diffEditor-insertedTextBorder);
+}
+
+.vscode-high-contrast .code-line-diff-deleted {
+	outline: 1px solid var(--vscode-diffEditor-removedTextBorder);
+}
+
+::highlight(diff-inner-added) {
+	background-color: var(--vscode-diffEditor-insertedTextBackground);
+}
+
+::highlight(diff-inner-deleted) {
+	background-color: var(--vscode-diffEditor-removedTextBackground);
+}
+
+/* Hide the empty marker spans so they don't affect layout */
+[data-diff-start],
+[data-diff-end] {
+	display: contents;
+}
+
+/* Change indicator — shown where lines were deleted or modified */
+.diff-change-indicator {
+	position: relative;
+	height: 4px;
+	overflow: visible;
+	z-index: 1;
+}
+
+/* Single visual element for the entire arrow + bar shape (avoids transparent color overlap) */
+.diff-change-indicator::before {
+	content: "";
+	position: absolute;
+	top: -4px;
+	left: -12px;
+	right: 0;
+	height: 12px;
+	background-color: var(--vscode-diffEditorGutter-removedLineBackground, var(--vscode-diffEditor-removedTextBackground));
+	clip-path: polygon(
+		0px 0px,
+		4px 4px,
+		100% 4px,
+		100% 8px,
+		4px 8px,
+		0px 12px
+	);
+	pointer-events: none;
+}
+
+/* Transparent hover target over the gutter arrow area */
+.diff-change-indicator-arrow {
+	display: block;
+	position: absolute;
+	top: -4px;
+	left: -12px;
+	width: 12px;
+	height: 12px;
+	cursor: pointer;
+	z-index: 2;
+}
+
+.diff-change-indicator-arrow:hover > .diff-change-indicator-tooltip,
+.diff-change-indicator-arrow > .diff-change-indicator-tooltip:hover {
+	display: block;
+}
+
+.diff-change-indicator-arrow > .diff-change-indicator-tooltip {
+	left: 8px;
+	top: 100%;
+	right: auto;
+	width: max-content;
+	max-width: 80vw;
+}
+
+/* Modified lines override the left gutter bar color */
+.code-line-diff-modified.code-line-diff-added {
+	box-shadow: none;
+}
+
+/* Modification indicator uses a subtler style placed after the changed block */
+.diff-change-indicator-modification {
+	height: 2px;
+	background: repeating-linear-gradient(
+		90deg,
+		var(--vscode-diffEditorGutter-removedLineBackground, var(--vscode-diffEditor-removedTextBackground)) 0px,
+		var(--vscode-diffEditorGutter-removedLineBackground, var(--vscode-diffEditor-removedTextBackground)) 4px,
+		transparent 4px,
+		transparent 8px
+	);
+}
+
+.diff-change-indicator-modification .diff-change-indicator-arrow {
+	background: inherit;
+}
+
+/* Left gutter bar for modification blocks */
+.diff-modification-gutter {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: -12px;
+	width: 4px;
+	z-index: 5;
+	background-color: var(--vscode-editorGutter-modifiedBackground, #1b81a8);
+	cursor: pointer;
+}
+
+.diff-modification-gutter:hover > .diff-change-indicator-tooltip,
+.diff-modification-gutter > .diff-change-indicator-tooltip:hover {
+	display: block;
+}
+
+.diff-modification-gutter > .diff-change-indicator-tooltip {
+	left: 4px;
+	top: 0;
+	right: auto;
+	width: max-content;
+	max-width: 80vw;
+}
+
+.diff-change-indicator-tooltip {
+	display: none;
+	position: absolute;
+	top: 100%;
+	left: 0;
+	right: 0;
+	z-index: 10;
+	background-color: var(--vscode-editor-background);
+	border: 1px solid var(--vscode-editorWidget-border, var(--vscode-contrastBorder, rgba(127, 127, 127, 0.35)));
+	border-radius: 3px;
+	max-height: min(400px, 80vh);
+	overflow-y: auto;
+	overflow-x: hidden;
+	overscroll-behavior: contain;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.diff-change-indicator-tooltip pre {
+	margin: 0;
+	font-size: 0.9em;
+	background: transparent;
+	border: 0;
+	white-space: pre-wrap;
+	word-break: break-word;
+	color: var(--vscode-editor-foreground);
+}
+
+.diff-tooltip-deleted {
+	background-color: var(--vscode-diffEditor-removedTextBackground);
+	border-left: 4px solid var(--vscode-diffEditorGutter-removedLineBackground, var(--vscode-diffEditor-removedTextBackground));
+	padding: 2px 6px;
+}
+
+.diff-tooltip-added {
+	background-color: var(--vscode-diffEditor-insertedTextBackground);
+	border-left: 4px solid var(--vscode-diffEditorGutter-insertedLineBackground, var(--vscode-diffEditor-insertedTextBackground));
+	padding: 2px 6px;
+}
+
+.diff-tooltip-inner-deleted,
+.diff-tooltip-inner-added {
+	box-decoration-break: clone;
+}
+
+.diff-tooltip-inner-deleted {
+	background-color: var(--vscode-diffEditor-removedTextBackground);
+	text-decoration: line-through;
+	text-decoration-color: var(--vscode-editor-foreground);
+}
+
+.diff-tooltip-inner-added {
+	background-color: var(--vscode-diffEditor-insertedTextBackground);
+}
+
+body.showEditorSelection :not(tr,ul,ol).code-active-line:before,
+body.showEditorSelection :not(tr,ul,ol).code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+.vscode-high-contrast.showEditorSelection  :not(tr,ul,ol).code-line .code-line:hover:before {
+	border-left: none;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+/* Prevent `sub` and `sup` elements from affecting line height */
+sub,
+sup {
+	line-height: 0;
+}
+
+ul ul:first-child,
+ul ol:first-child,
+ol ul:first-child,
+ol ol:first-child {
+	margin-bottom: 0;
+}
+
+img, video {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+p {
+	margin-bottom: 16px;
+}
+
+li p {
+	margin-bottom: 0.7em;
+}
+
+ul,
+ol {
+	margin-bottom: 0.7em;
+}
+
+hr {
+	border: 0;
+	height: 1px;
+	border-bottom: 1px solid;
+}
+
+h1 {
+	font-size: 2em;
+	margin-top: 0;
+	padding-bottom: 0.3em;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h2 {
+	font-size: 1.5em;
+	padding-bottom: 0.3em;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h3 {
+	font-size: 1.25em;
+}
+
+h4 {
+	font-size: 1em;
+}
+
+h5 {
+	font-size: 0.875em;
+}
+
+h6 {
+	font-size: 0.85em;
+}
+
+table {
+	border-collapse: collapse;
+	margin-bottom: 0.7em;
+}
+
+th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+th,
+td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0;
+	padding: 0px 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+	border-radius: 2px;
+}
+
+code {
+	font-family: var(--vscode-editor-font-family, "SF Mono", Monaco, Menlo, Consolas, "Ubuntu Mono", "Liberation Mono", "DejaVu Sans Mono", "Courier New", monospace);
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	display: inline-block;
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+	background: none;
+}
+
+/** Theming */
+
+pre {
+	position: relative;
+	background-color: var(--vscode-textCodeBlock-background);
+	border: 1px solid var(--vscode-widget-border);
+}
+
+/* Code block copy button */
+.code-block-copy-button {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	border: 1px solid var(--vscode-widget-border, rgba(127, 127, 127, 0.35));
+	border-radius: 4px;
+	background-color: var(--vscode-textCodeBlock-background, var(--vscode-editor-background));
+	color: var(--vscode-editor-foreground);
+	cursor: pointer;
+	opacity: 0;
+	transition: opacity 0.15s ease;
+}
+
+pre:hover > .code-block-copy-button,
+.code-block-copy-button:focus {
+	opacity: 1;
+}
+
+.code-block-copy-button:hover {
+	background-color: var(--vscode-toolbar-hoverBackground, rgba(90, 93, 94, 0.31));
+}
+
+.code-block-copy-button:active {
+	background-color: var(--vscode-toolbar-activeBackground, rgba(99, 102, 103, 0.31));
+}
+
+.code-block-copy-button.copied {
+	color: var(--vscode-testing-iconPassed, #73c991);
+	opacity: 1;
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light h2,
+.vscode-light hr,
+.vscode-light td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark h2,
+.vscode-dark hr,
+.vscode-dark td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+/* Frontmatter rendering */
+table.frontmatter {
+	margin-bottom: 16px;
+	border-collapse: collapse;
+}
+
+table.frontmatter th,
+table.frontmatter td {
+	padding: 6px 13px;
+	border: 1px solid var(--vscode-widget-border, rgba(127, 127, 127, 0.35));
+	text-align: left;
+	vertical-align: top;
+}
+
+table.frontmatter th {
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+table.frontmatter td > ul {
+	margin: 0;
+	padding-left: 1.2em;
+}
+
+pre.frontmatter {
+	margin-bottom: 16px;
+}
+
+.frontmatter-error {
+	margin-bottom: 16px;
+	padding: 8px 13px;
+	border-left: 4px solid var(--vscode-editorError-foreground, #f48771);
+	background: var(--vscode-inputValidation-errorBackground, rgba(244, 135, 113, 0.1));
+	color: var(--vscode-editorError-foreground, #f48771);
+}
+
+.frontmatter-error pre {
+	margin: 6px 0 0;
+	white-space: pre-wrap;
+	color: inherit;
+	background: transparent;
+	padding: 0;
+}
+</style><style>/*
+https://raw.githubusercontent.com/isagalaev/highlight.js/master/src/styles/vs2015.css
+*/
+/*
+ * Visual Studio 2015 dark style
+ * Author: Nicolas LLOBERA <nllobera@gmail.com>
+ */
+
+
+.hljs-keyword,
+.hljs-literal,
+.hljs-symbol,
+.hljs-name {
+	color: #569CD6;
+}
+.hljs-link {
+	color: #569CD6;
+	text-decoration: underline;
+}
+
+.hljs-built_in,
+.hljs-type {
+	color: #4EC9B0;
+}
+
+.hljs-number,
+.hljs-class {
+	color: #B8D7A3;
+}
+
+.hljs-string,
+.hljs-meta-string {
+	color: #D69D85;
+}
+
+.hljs-regexp,
+.hljs-template-tag {
+	color: #9A5334;
+}
+
+.hljs-subst,
+.hljs-function,
+.hljs-title,
+.hljs-params,
+.hljs-formula {
+	color: #DCDCDC;
+}
+
+.hljs-comment,
+.hljs-quote {
+	color: #57A64A;
+	font-style: italic;
+}
+
+.hljs-doctag {
+	color: #608B4E;
+}
+
+.hljs-meta,
+.hljs-meta-keyword,
+.hljs-tag {
+	color: #9B9B9B;
+}
+
+.hljs-variable,
+.hljs-template-variable {
+	color: #BD63C5;
+}
+
+.hljs-attr,
+.hljs-attribute,
+.hljs-builtin-name {
+	color: #9CDCFE;
+}
+
+.hljs-section {
+	color: gold;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+
+/*.hljs-code {
+	font-family:'Monospace';
+}*/
+
+.hljs-bullet,
+.hljs-selector-tag,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-selector-attr,
+.hljs-selector-pseudo {
+	color: #D7BA7D;
+}
+
+.hljs-addition {
+	background-color: var(--vscode-diffEditor-insertedTextBackground, rgba(155, 185, 85, 0.2));
+	color: rgb(155, 185, 85);
+	display: inline-block;
+	width: 100%;
+}
+
+.hljs-deletion {
+	background: var(--vscode-diffEditor-removedTextBackground, rgba(255, 0, 0, 0.2));
+	color: rgb(255, 0, 0);
+	display: inline-block;
+	width: 100%;
+}
+
+
+/*
+From https://raw.githubusercontent.com/isagalaev/highlight.js/master/src/styles/vs.css
+*/
+/*
+
+Visual Studio-like style based on original C# coloring by Jason Diamond <jason@diamond.name>
+
+*/
+
+.vscode-light .hljs-function,
+.vscode-light .hljs-params,
+.vscode-light .hljs-number,
+.vscode-light .hljs-class  {
+	color: inherit;
+}
+
+.vscode-light .hljs-comment,
+.vscode-light .hljs-quote,
+.vscode-light .hljs-number,
+.vscode-light .hljs-class,
+.vscode-light .hljs-variable {
+	color: #008000;
+}
+
+.vscode-light .hljs-keyword,
+.vscode-light .hljs-selector-tag,
+.vscode-light .hljs-name,
+.vscode-light .hljs-tag {
+	color: #00f;
+}
+
+.vscode-light .hljs-built_in,
+.vscode-light .hljs-builtin-name {
+	color: #007acc;
+}
+
+.vscode-light .hljs-string,
+.vscode-light .hljs-section,
+.vscode-light .hljs-attribute,
+.vscode-light .hljs-literal,
+.vscode-light .hljs-template-tag,
+.vscode-light .hljs-template-variable,
+.vscode-light .hljs-type {
+	color: #a31515;
+}
+
+.vscode-light .hljs-subst,
+.vscode-light .hljs-selector-attr,
+.vscode-light .hljs-selector-pseudo,
+.vscode-light .hljs-meta,
+.vscode-light .hljs-meta-keyword {
+	color: #2b91af;
+}
+.vscode-light .hljs-title,
+.vscode-light .hljs-doctag {
+	color: #808080;
+}
+
+.vscode-light .hljs-attr {
+	color: #f00;
+}
+
+.vscode-light .hljs-symbol,
+.vscode-light .hljs-bullet,
+.vscode-light .hljs-link {
+	color: #00b0e8;
+}
+
+
+.vscode-light .hljs-emphasis {
+	font-style: italic;
+}
+
+.vscode-light .hljs-strong {
+	font-weight: bold;
+}
+</style><style>/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only],
+.vscode-high-contrast:not(.vscode-high-contrast-light) img[src$=\#gh-light-mode-only],
+.vscode-high-contrast-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+</style><style>/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.katex-error {
+	color: var(--vscode-editorError-foreground);
+}
+</style><style>.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}</style><style>:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+</style><style>@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+</style><style>.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+</style><style>
+.mermaid-diagram { margin: 1em 0; text-align: center; break-inside: avoid; }
+.mermaid-diagram svg { max-width: 100%; height: auto; }
+img { max-width: 100%; break-inside: avoid; }
+h1, h2, h3, h4, h5, h6 { break-after: avoid; }
+.task-list-item { list-style-type: none; }
+.task-list-item-checkbox { margin: 0 0.2em 0.25em -1.4em; vertical-align: middle; }
+</style><style>body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif; font-size: 14px; line-height: 1.6; }</style></head><body class="vscode-body vscode-light">
+<h1 id="accesswebview--developer-documentation--reference-guide">AccessWebview — Developer Documentation &amp; Reference Guide</h1>
+<p><code>AccessWebview</code> is a self-contained, <strong>32-bit (<code>x86</code>) and 64-bit (<code>x64</code>) Microsoft Access VBA WebView2 framework</strong> adapted from <a href="https://github.com/tarboh/WebView2-For-Excel-VBA"><code>tarboh/WebView2-For-Excel-VBA</code></a> (<code>v0.5.2</code>). It drives the native <code>WebView2Loader.dll</code> shipped inside <code>Microsoft Office\root\Office16\</code> alongside <code>MSACCESS.EXE</code> using <code>oleaut32!DispCallFunc</code>, <code>SAFEARRAY</code> pointer primitives, and dual-architecture (<code>x86</code> / <code>x64</code>) <code>VBE7.DLL</code>-guarded machine-code callback thunks.</p>
+<p>It requires <strong>zero COM/ActiveX registration</strong>, <strong>zero VBA Tools -&gt; References</strong> beyond standard Access defaults, <strong>zero admin privileges</strong>, and <strong>zero <code>MSysResources</code> Trusted Domains configuration</strong>—unlocking direct <code>chrome.webview.hostObjects</code> DAO RPC, event-driven <code>postMessage</code>, <code>SetVirtualHostNameToFolderMapping</code> local SPA hosting, F12 DevTools, Playwright-style DOM automation, and HTTP request/response capture inside Microsoft Access forms.</p>
+<p><img src="AccessWebview-Live-Verified.png" alt="AccessWebview Live Verified" /></p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#1-directory-layout--module-inventory">Directory Layout &amp; Module Inventory</a></li>
+<li><a href="#2-installation--integration-guide">Installation &amp; Integration Guide</a></li>
+<li><a href="#3-quick-start-recipes">Quick-Start Recipes</a></li>
+<li><a href="#4-architecture-overview">Architecture Overview</a></li>
+<li><a href="#5-low-level-com--callback-thunk-internals-wv2thunks--comcallbackhandler">Low-Level COM &amp; Callback Thunk Internals (<code>Wv2Thunks</code> &amp; <code>ComCallbackHandler</code>)</a></li>
+<li><a href="#6-access-windowing--form-lifecycle-modwv2accesshost--frmwv2surface">Access Windowing &amp; Form Lifecycle (<code>modWv2AccessHost</code> &amp; <code>frmWv2Surface</code>)</a></li>
+<li><a href="#7-core-browser--viewport-api-reference-wv2environment--wv2pane">Core Browser &amp; Viewport API Reference (<code>Wv2Environment</code> &amp; <code>Wv2Pane</code>)</a></li>
+<li><a href="#8-javascript---access-vba--dao-ipc-patterns">JavaScript &lt;-&gt; Access VBA / DAO IPC Patterns</a></li>
+<li><a href="#9-dom-automation--spa-quiescence-api-wv2element--wv2pane-d-axis">DOM Automation &amp; SPA Quiescence API (<code>Wv2Element</code> &amp; <code>Wv2Pane</code> D-Axis)</a></li>
+<li><a href="#10-network-traffic-inspection--capture-api-wv2pane-n-axis">Network Traffic Inspection &amp; Capture API (<code>Wv2Pane</code> N-Axis)</a></li>
+<li><a href="#11-multi-tab-management--deferred-timers-wv2browser-safetimer-libtimers">Multi-Tab Management &amp; Deferred Timers (<code>Wv2Browser</code>, <code>SafeTimer</code>, <code>LibTimers</code>)</a></li>
+<li><a href="#12-32-bit-x86-vs-64-bit-x64-abi--edge-case-guarantees">32-Bit (<code>x86</code>) vs. 64-Bit (<code>x64</code>) ABI &amp; Edge-Case Guarantees</a></li>
+<li><a href="#13-comparison-accesswebview-vs-native-access-edgebrowsercontrol">Comparison: <code>AccessWebview</code> vs. Native Access <code>EdgeBrowserControl</code></a></li>
+<li><a href="#14-diagnostics-logging-wv2log-testing--troubleshooting">Diagnostics, Logging (<code>Wv2Log</code>), Testing &amp; Troubleshooting</a></li>
+</ol>
+<hr />
+<h2 id="1-directory-layout--module-inventory">1. Directory Layout &amp; Module Inventory</h2>
+<h3 id="repository-files">Repository Files</h3>
+<table>
+<thead>
+<tr>
+<th>File / Folder</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="AccessWebview.accdb"><code>./AccessWebview.accdb</code></a></td>
+<td>Reference host database (compiled &amp; verified in 32-bit <code>MSACCESS.EXE</code> <code>16.0.20430.20180</code>; compatible with 64-bit Access)</td>
+</tr>
+<tr>
+<td><a href="spa/index.html"><code>./spa/index.html</code></a></td>
+<td>Sample dark-mode SPA mounted at <code>https://appassets.access.local/index.html</code> demonstrating <code>hostObjects.vba</code> DAO CRUD + bidirectional <code>postMessage</code></td>
+</tr>
+<tr>
+<td><a href="src"><code>./src/</code></a></td>
+<td>Exported 7-bit ASCII VBA source for all 16 modules, classes, and Access forms (managed via XLIDE)</td>
+</tr>
+<tr>
+<td><a href="AccessWebview-Live-Verified.png"><code>./AccessWebview-Live-Verified.png</code></a></td>
+<td>Live screenshot of <code>frmWv2Demo</code> running in 32-bit Microsoft Access</td>
+</tr>
+<tr>
+<td><a href="README.md"><code>./README.md</code></a> / <a href="README.html"><code>./README.html</code></a></td>
+<td>Developer documentation (Markdown &amp; standalone HTML)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="vba-module-inventory-src">VBA Module Inventory (<code>src/</code>)</h3>
+<p>Depending on whether you are building a <strong>single-pane Access SPA</strong> or a <strong>multi-tab automation browser</strong>, you can import either the <strong>Lean SPA Core (9 objects)</strong> or the <strong>Full Suite (16 objects)</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Module / Form</th>
+<th>Type</th>
+<th>Tier</th>
+<th style="text-align: right;">Lines</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="src/Wv2Thunks.bas"><code>Wv2Thunks.bas</code></a></td>
+<td>Standard</td>
+<td><strong>Core</strong></td>
+<td style="text-align: right;">2,716</td>
+<td><code>WebView2Loader.dll</code> declaration, <code>DispCallFunc</code> (<code>dcf</code>), <code>VirtualAlloc</code> 512-slot callback pool, <code>x86</code>/<code>x64</code> machine-code thunks, IID table, <code>SAFEARRAY</code> memory primitives, and VBE Reset Sentinel</td>
+</tr>
+<tr>
+<td><a href="src/ComCallbackHandler.cls"><code>ComCallbackHandler.cls</code></a></td>
+<td>Class</td>
+<td><strong>Core</strong></td>
+<td style="text-align: right;">166</td>
+<td>Receives all 13 <code>HandlerKind</code> COM callbacks at fixed vtable slot 7 (<code>Handler_Invoke</code>) and routes them to owner classes</td>
+</tr>
+<tr>
+<td><a href="src/Wv2Environment.cls"><code>Wv2Environment.cls</code></a></td>
+<td>Class</td>
+<td><strong>Core</strong></td>
+<td style="text-align: right;">255</td>
+<td>Asynchronous <code>ICoreWebView2Environment</code> bootstrapper and COM pointer lifetime wrapper</td>
+</tr>
+<tr>
+<td><a href="src/Wv2Pane.cls"><code>Wv2Pane.cls</code></a></td>
+<td>Class</td>
+<td><strong>Core</strong></td>
+<td style="text-align: right;">7,998</td>
+<td><code>ICoreWebView2Controller</code> + <code>ICoreWebView2</code> / <code>_2</code> / <code>_3</code> wrapper, <code>EvalSync</code>, DOM queries, quiescence probes, and network capture</td>
+</tr>
+<tr>
+<td><a href="src/Wv2Element.cls"><code>Wv2Element.cls</code></a></td>
+<td>Class</td>
+<td><strong>Core</strong></td>
+<td style="text-align: right;">489</td>
+<td>Generation-checked DOM element handle (<code>InnerText</code>, <code>InnerHTML</code>, <code>Value</code>, <code>Click</code>, <code>GetAttribute</code>, <code>SetAttribute</code>)</td>
+</tr>
+<tr>
+<td><a href="src/Wv2Json.bas"><code>Wv2Json.bas</code></a></td>
+<td>Standard</td>
+<td><strong>Core</strong></td>
+<td style="text-align: right;">373</td>
+<td>Pure-VBA JSON escaping, unescaping (including UTF-16 surrogate pairs), and lightweight key extraction</td>
+</tr>
+<tr>
+<td><a href="src/Wv2Log.bas"><code>Wv2Log.bas</code></a></td>
+<td>Standard</td>
+<td><strong>Core</strong></td>
+<td style="text-align: right;">514</td>
+<td>Sequenced UTF-8 file logger (<code>%APPDATA%\Wv2Browser\logs</code>) with automatic log rotation</td>
+</tr>
+<tr>
+<td><a href="src/modWv2AccessHost.bas"><code>modWv2AccessHost.bas</code></a></td>
+<td>Standard</td>
+<td><strong>Core</strong></td>
+<td style="text-align: right;">259</td>
+<td>Access <code>OFormSub</code> Detail HWND resolver (<code>GetAccessFormCanvasHwnd</code>), folder helpers, and 3-step self-test suite</td>
+</tr>
+<tr>
+<td><a href="src/Form_frmWv2Surface.cls"><code>Form_frmWv2Surface.cls</code></a></td>
+<td>Form</td>
+<td><strong>Core</strong></td>
+<td style="text-align: right;">143</td>
+<td>Reusable borderless Access Subform canvas (<code>InitSpa</code>, <code>ResizeViewport</code>, <code>ShutdownWebView</code>, <code>WebMessageReceived</code> sink)</td>
+</tr>
+<tr>
+<td><a href="src/clsWv2AccessBridge.cls"><code>clsWv2AccessBridge.cls</code></a></td>
+<td>Class</td>
+<td>App</td>
+<td style="text-align: right;">152</td>
+<td>Example DAO RPC bridge exposed to JavaScript as <code>window.chrome.webview.hostObjects.vba</code></td>
+</tr>
+<tr>
+<td><a href="src/Form_frmWv2Demo.cls"><code>Form_frmWv2Demo.cls</code></a></td>
+<td>Form</td>
+<td>App</td>
+<td style="text-align: right;">106</td>
+<td>Example Access host form combining native Access header controls with <code>frmWv2Surface</code></td>
+</tr>
+<tr>
+<td><a href="src/Wv2Browser.cls"><code>Wv2Browser.cls</code></a></td>
+<td>Class</td>
+<td>Multi-Tab</td>
+<td style="text-align: right;">2,860</td>
+<td>Multi-tab controller, tab events, and <code>put_NewWindow</code> prewarmed popup tab delegation</td>
+</tr>
+<tr>
+<td><a href="src/SafeTimer.cls"><code>SafeTimer.cls</code></a></td>
+<td>Class</td>
+<td>Multi-Tab</td>
+<td style="text-align: right;">90</td>
+<td>Break-safe Win32 timer backed by a message-only window (<code>HWND_MESSAGE = -3</code>) for deferred async actions outside WebView2 callbacks</td>
+</tr>
+<tr>
+<td><a href="src/LibTimers.bas"><code>LibTimers.bas</code></a></td>
+<td>Standard</td>
+<td>Multi-Tab</td>
+<td style="text-align: right;">127</td>
+<td><code>x86</code> + <code>x64</code> VBE7 <code>EntryPoint</code> timer callback thunk for <code>SafeTimer</code></td>
+</tr>
+<tr>
+<td><a href="src/Wv2Url.bas"><code>Wv2Url.bas</code></a></td>
+<td>Standard</td>
+<td>Multi-Tab</td>
+<td style="text-align: right;">155</td>
+<td>UTF-8 percent-encoding (<code>UrlEncodeComponent</code>) and URL scheme helpers</td>
+</tr>
+<tr>
+<td><a href="src/Wv2SettingsBridge.cls"><code>Wv2SettingsBridge.cls</code></a></td>
+<td>Class</td>
+<td>Multi-Tab</td>
+<td style="text-align: right;">654</td>
+<td>Search-engine preset persistence helper used by <code>Wv2Browser</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-installation--integration-guide">2. Installation &amp; Integration Guide</h2>
+<h3 id="runtime-prerequisites-already-present-on-modern-windows--office">Runtime Prerequisites (Already Present on Modern Windows + Office)</h3>
+<ol>
+<li><strong>Microsoft Access 2016 / 2019 / 2021 / LTSC / Microsoft 365</strong> (<code>32-bit x86</code> or <code>64-bit x64</code>).</li>
+<li><strong><code>WebView2Loader.dll</code>:</strong> Automatically resolved from <code>Microsoft Office\root\Office16\WebView2Loader.dll</code> (installed right beside <code>MSACCESS.EXE</code>, so Windows loads the exact matching <code>x86</code> or <code>x64</code> binary first under standard DLL search order).</li>
+<li><strong>Microsoft Edge WebView2 Evergreen Runtime:</strong> Pre-installed on Windows 10 (21H2+) and Windows 11 (<code>C:\Program Files (x86)\Microsoft\EdgeWebView\Application</code>).</li>
+</ol>
+<blockquote>
+<p><strong>Zero External References:</strong> Only the standard built-in Access VBA references (<code>VBA</code>, <code>Access</code>, <code>stdole</code>, and <code>DAO</code> if your bridge queries tables) are needed. Do <strong>not</strong> add references to <code>Microsoft Internet Controls</code>, <code>Microsoft HTML Object Library</code>, or any <code>.tlb</code> / <code>.dll</code>.</p>
+</blockquote>
+<h3 id="integrating-into-an-existing-accdb-application">Integrating into an Existing <code>.accdb</code> Application</h3>
+<ol>
+<li><strong>Import the Core Modules:</strong><br />
+Copy or import <code>Wv2Thunks</code>, <code>ComCallbackHandler</code>, <code>Wv2Environment</code>, <code>Wv2Pane</code>, <code>Wv2Element</code>, <code>Wv2Json</code>, <code>Wv2Log</code>, <code>modWv2AccessHost</code>, and the reusable form <strong><code>frmWv2Surface</code></strong> from <code>AccessWebview.accdb</code> into your front-end <code>.accdb</code> (<em>External Data -&gt; New Data Source -&gt; From Database -&gt; Access</em>).</li>
+<li><strong>Drop <code>frmWv2Surface</code> onto Your Host Form:</strong>
+<ul>
+<li>Open your host form in Design View and add a <strong>Subform/Subreport</strong> control named <code>subWebView</code> with <code>SourceObject = &quot;frmWv2Surface&quot;</code>, <code>BorderStyle = Transparent (0)</code>.</li>
+<li>If using Access layout anchoring, set <code>HorizontalAnchor = Both</code> and <code>VerticalAnchor = Both</code>—or resize <code>Me.subWebView</code> explicitly in <code>Form_Resize</code> (recommended for pixel-tight full-bleed layouts).</li>
+</ul>
+</li>
+<li><strong>Create Your Bridge Class:</strong><br />
+Create a standard VBA class module (e.g., <code>clsAppBridge</code>) with <code>Public Function</code> / <code>Public Sub</code> methods. Every VBA class automatically implements <code>IDispatch</code>, so WebView2 exposes its <code>Public</code> members directly to JavaScript when passed to <code>InitSpa</code> or <code>View_AddHostObjectToScript</code>.</li>
+<li><strong>Compile Before First Run:</strong><br />
+In the VBA Editor (<code>Alt+F11</code>), click <strong>Debug -&gt; Compile <code>&lt;ProjectName&gt;</code></strong> and save. Compiling ensures all standard-module <code>AddressOf</code> function pointers (<code>Handler_QueryInterface</code>, <code>Handler_AddRef</code>, <code>Handler_Release</code>, <code>EntryPoint</code>) are materialized before Win32 APIs invoke them.</li>
+</ol>
+<hr />
+<h2 id="3-quick-start-recipes">3. Quick-Start Recipes</h2>
+<h3 id="recipe-1-full-local-spa-with-synchronousasync-dao-bridge-frmwv2surface">Recipe 1: Full Local SPA with Synchronous/Async DAO Bridge (<code>frmWv2Surface</code>)</h3>
+<p>Place your <code>index.html</code>, <code>.js</code>, and <code>.css</code> assets in a local folder (e.g., <code>CurrentProject.Path &amp; &quot;\spa&quot;</code>). Inside your Access host form:</p>
+<pre><code class="language-vba">Option Compare Database
+Option Explicit
+
+Private m_bridge As clsWv2AccessBridge
+
+Private Sub Form_Load()
+    Set m_bridge = New clsWv2AccessBridge
+
+    Dim surf As Form_frmWv2Surface
+    Set surf = Me.subWebView.Form
+
+    ' Mounts folder at https://appassets.access.local/index.html and attaches m_bridge as hostObjects.vba
+    If Not surf.InitSpa( _
+        virtualHostName:=&quot;appassets.access.local&quot;, _
+        localFolderPath:=CurrentProject.Path &amp; &quot;\spa&quot;, _
+        entryFile:=&quot;index.html&quot;, _
+        hostObject:=m_bridge, _
+        hostObjectName:=&quot;vba&quot;) Then
+        MsgBox &quot;WebView2 failed to initialize.&quot;, vbExclamation
+    End If
+End Sub
+
+Private Sub Form_Resize()
+    On Error Resume Next
+    Me.subWebView.Move 0, 0, Me.InsideWidth, Me.InsideHeight - Me.FormHeader.Height
+    Me.subWebView.Form.ResizeViewport
+    On Error GoTo 0
+End Sub
+
+Private Sub Form_Unload(Cancel As Integer)
+    On Error Resume Next
+    Me.subWebView.Form.ShutdownWebView
+    Set m_bridge = Nothing
+    On Error GoTo 0
+End Sub
+</code></pre>
+<p>Inside your JavaScript (<code>spa/index.html</code>):</p>
+<pre><code class="language-javascript">// Asynchronous call (non-blocking Promise — preferred for UI responsiveness)
+const tasksJson = await window.chrome.webview.hostObjects.vba.GetTasksJson();
+const tasks = JSON.parse(tasksJson);
+
+// Synchronous call (blocks JS until VBA returns)
+const hostJson = window.chrome.webview.hostObjects.sync.vba.GetHostInfoJson();
+</code></pre>
+<h3 id="recipe-2-self-contained-inline-html-view_navigatetostring--zero-external-files">Recipe 2: Self-Contained Inline HTML (<code>View_NavigateToString</code> — Zero External Files)</h3>
+<p>When you want to render charts, Markdown previews, or interactive cards from HTML generated purely in VBA without writing files to disk:</p>
+<pre><code class="language-vba">Public Sub LoadInlineHtmlCard(ByVal surf As Form_frmWv2Surface)
+    Dim env As New Wv2Environment
+    env.Init GetDefaultUserDataFolder()
+    Do While Not env.IsReady And Not env.IsFailed: DoEvents: Loop
+
+    Dim pane As New Wv2Pane
+    pane.Init env, GetAccessFormCanvasHwnd(surf)
+    Do While Not pane.IsReady And Not pane.IsFailed: DoEvents: Loop
+
+    pane.Ctrl_GetCoreWebView2
+    pane.View_AddNavigationCompleted
+    pane.View_AddWebMessageReceived
+
+    Dim rc As RECT
+    GetClientRect GetAccessFormCanvasHwnd(surf), rc
+    pane.Ctrl_PutBounds rc
+    pane.Ctrl_PutIsVisible True
+
+    pane.View_NavigateToString _
+        &quot;&lt;!doctype html&gt;&lt;html&gt;&lt;body style='font-family:Segoe UI;padding:20px'&gt;&quot; &amp; _
+        &quot;&lt;h2&gt;Inline Access Report&lt;/h2&gt;&quot; &amp; _
+        &quot;&lt;button onclick=&quot;&quot;chrome.webview.postMessage('export-clicked')&quot;&quot;&gt;Export&lt;/button&gt;&quot; &amp; _
+        &quot;&lt;/body&gt;&lt;/html&gt;&quot;
+End Sub
+</code></pre>
+<blockquote>
+<p><strong>Note:</strong> <code>View_NavigateToString</code> has an <code>about:blank</code> origin and a ~2 MB string limit. Whenever your app uses ES modules (<code>&lt;script type=&quot;module&quot;&gt;</code>), <code>fetch()</code> to local assets, <code>localStorage</code>, or <code>history.pushState</code> routing, use <code>InitSpa</code> / <code>View3_SetVirtualHostNameToFolderMapping</code> instead so your app runs under a genuine secure <code>https://</code> origin.</p>
+</blockquote>
+<h3 id="recipe-3-automated-web-driving--reactvue-form-filling-wv2element--waitsettled">Recipe 3: Automated Web Driving &amp; React/Vue Form Filling (<code>Wv2Element</code> + <code>WaitSettled</code>)</h3>
+<pre><code class="language-vba">Public Sub AutomatePortalSearch(ByVal p As Wv2Pane, ByVal queryText As String)
+    p.View_Navigate &quot;https://example.org&quot;
+
+    ' 1. Wait up to 10s for an input element to appear in the DOM
+    Dim searchBox As Wv2Element
+    Set searchBox = p.WaitFor(&quot;#search-input&quot;, 10)
+    If searchBox Is Nothing Then Exit Sub
+
+    ' 2. Arm a network or URL signal BEFORE triggering the UI action
+    p.ArmNetworkSignal &quot;/api/search&quot;
+
+    ' 3. Assign .value (uses native HTMLInputElement prototype setter so React/Vue state updates!)
+    searchBox.value = queryText
+    p.QuerySelector(&quot;#submit-btn&quot;).Click
+
+    ' 4. Wait until in-flight fetch/XHR + DOM mutations settle
+    If p.WaitSettled(timeoutSec:=15, quietMs:=400) Then
+        Dim rows As Collection
+        Set rows = p.QuerySelectorAll(&quot;.result-item&quot;)
+        Dim item As Wv2Element
+        For Each item In rows
+            Debug.Print item.InnerText
+        Next item
+    End If
+End Sub
+</code></pre>
+<hr />
+<h2 id="4-architecture-overview">4. Architecture Overview</h2>
+<p><code>AccessWebview</code> is structured in five strict layers so low-level pointer/thunk mechanics never leak into form or business logic:</p>
+<pre><code class="language-text">+----------------------------------------------------------------------------------------+
+| Layer 5: Access Application &amp; UI Layer                                                 |
+|   frmWv2Demo (Host Form)  |  clsWv2AccessBridge (DAO / Business Logic via IDispatch)   |
++----------------------------------------------------------------------------------------+
+| Layer 4: Reusable Access Host Surface                                                  |
+|   frmWv2Surface (Borderless Subform)  |  modWv2AccessHost (OFormSub HWND &amp; Test Suite) |
++----------------------------------------------------------------------------------------+
+| Layer 3: High-Level Browser, DOM &amp; Network Abstractions                                |
+|   Wv2Element (DOM Handle)  |  Wv2Browser (Multi-Tab + Prewarm)  |  Wv2Json / Wv2Log    |
++----------------------------------------------------------------------------------------+
+| Layer 2: Core WebView2 COM Wrappers                                                    |
+|   Wv2Environment (ICoreWebView2Environment)                                            |
+|   Wv2Pane (ICoreWebView2Controller + ICoreWebView2 / _2 / _3 + IStream + Headers)      |
++----------------------------------------------------------------------------------------+
+| Layer 1: Zero-Reference COM Dispatch &amp; Dual-Bitness Callback Thunk Pool                |
+|   Wv2Thunks.bas (DispCallFunc, SAFEARRAY PointerAccessor, VirtualAlloc 512-Slot Pool,  |
+|                  VBE7 EbMode Stub + x86/x64 Machine-Code Thunks, Reset Sentinel)       |
+|   ComCallbackHandler.cls (Fixed Slot-7 Handler_Invoke Router for 13 HandlerKinds)      |
++----------------------------------------------------------------------------------------+
+| Native OS / Office Binaries (Pre-Installed — Zero Registration)                        |
+|   Office16\WebView2Loader.dll  --&gt;  EdgeWebView\...\EmbeddedBrowserWebView.dll         |
++----------------------------------------------------------------------------------------+
+</code></pre>
+<hr />
+<h2 id="5-low-level-com--callback-thunk-internals-wv2thunks--comcallbackhandler">5. Low-Level COM &amp; Callback Thunk Internals (<code>Wv2Thunks</code> &amp; <code>ComCallbackHandler</code>)</h2>
+<h3 id="51-outbound-vtable-calls-via-dcf-dispcallfunc">5.1 Outbound VTable Calls via <code>dcf</code> (<code>DispCallFunc</code>)</h3>
+<p>WebView2 exposes pure C++ <code>IUnknown</code>-derived vtable interfaces (<code>ICoreWebView2</code>, <code>ICoreWebView2Controller</code>, etc.) rather than late-bound <code>IDispatch</code> interfaces, and its type library is not registered in the Windows Registry. <code>Wv2Thunks.dcf</code> invokes any COM method directly by <strong>0-based vtable index</strong> (<code>0 = QueryInterface</code>, <code>1 = AddRef</code>, <code>2 = Release</code>, <code>3+ = interface methods</code>):</p>
+<pre><code class="language-vba">Public Function dcf( _
+    ByVal pInterface As LongPtr, _
+    ByVal vtblIndex As Long, _
+    ByVal funcName As String, _
+    ParamArray args() As Variant) As Long
+</code></pre>
+<p><strong>Argument Marshaling Rules in <code>dcf</code>:</strong></p>
+<ul>
+<li><code>vbLong</code> -&gt; passed as 4-byte integer (<code>VT_I4</code>).</li>
+<li><code>vbDouble</code> -&gt; passed as 8-byte IEEE float (<code>VT_R8</code>).</li>
+<li><code>vbCurrency</code> -&gt; passed as <strong>8-byte raw 64-bit integer value (<code>VT_CY</code>) on both <code>x86</code> and <code>x64</code></strong> (used for <code>EventRegistrationToken</code> in <code>remove_*</code> calls and <code>LARGE_INTEGER</code> offsets in <code>IStream::Seek</code>).</li>
+<li><code>vbLongLong</code> (on <code>Win64</code>) -&gt; passed as 8-byte <code>LongPtr</code> (<code>VT_I8</code>).</li>
+<li><code>Else</code> fallback -&gt; <code>vbLongLong</code> on <code>Win64</code>, <code>vbLong</code> on <code>32-bit x86</code>.</li>
+<li><strong>Out-Pointers (<code>[out] void**</code>, <code>[out] LPWSTR*</code>):</strong> Pass <code>VarPtr(localVar)</code>. Strings returned by WebView2 (<code>LPWSTR*</code>) are copied into a VBA <code>BSTR</code> via <code>PtrToString</code> and freed immediately via <code>ole32!CoTaskMemFree</code> (<code>GetStringProperty</code> handles all three steps automatically).</li>
+<li><strong>Return Value Contract:</strong> <code>dcf</code> does <strong>not</strong> assume non-zero means failure, because <code>IUnknown::AddRef</code> and <code>Release</code> return <code>ULONG</code> reference counts (<code>1, 2, ...</code>) rather than <code>HRESULT</code>s. Callers check <code>hr &lt;&gt; 0</code> on <code>HRESULT</code>-returning methods.</li>
+</ul>
+<h3 id="52-inbound-callback-pool-virtualalloc--vbe7-ebmode-gate--machine-code-thunk">5.2 Inbound Callback Pool (<code>VirtualAlloc</code> + <code>VBE7</code> <code>EbMode</code> Gate + Machine-Code Thunk)</h3>
+<p>Every asynchronous WebView2 operation (<code>CreateCoreWebView2EnvironmentWithOptions</code>, <code>CreateCoreWebView2Controller</code>, <code>ExecuteScript</code>, <code>GetContent</code>, and all 9 browser events) requires the host to supply a custom COM callback object whose vtable is:</p>
+<ul>
+<li><code>Slot 0</code>: <code>QueryInterface(this, riid, ppvObject)</code></li>
+<li><code>Slot 1</code>: <code>AddRef(this)</code></li>
+<li><code>Slot 2</code>: <code>Release(this)</code></li>
+<li><code>Slot 3</code>: <code>Invoke(this, arg1, arg2)</code></li>
+</ul>
+<p>Because a VBA class module's vtable places <code>IDispatch</code> in slots <code>3..6</code>, puts its first user method at <strong>slot 7</strong>, expects <code>ObjPtr(instance)</code> as hidden <code>arg0</code>, and returns <code>Function</code> results through a hidden trailing <code>HRESULT*</code> out-parameter, <code>Wv2Thunks.Thunks_Init</code> allocates a single <code>114,752</code>-byte <code>PAGE_EXECUTE_READWRITE</code> region containing a 64-byte header (byte <code>0</code> = pool alive flag) plus <strong>512 reusable 224-byte callback slots</strong>:</p>
+<pre><code class="language-text">Slot Layout (224 bytes per slot; pVTableObj = pSlot + 176 passed to WebView2 as `this`):
+  +0..+90    : Cloned VBE7 EntryPoint stub (checks VBE7!EbMode; skips call in VBE Break mode!)
+                 * x64: 91 bytes, jump target patched at +55 (LATE_BIND_OFFSET = 55)
+                 * x86: 33 bytes, jump target patched at +22 (LATE_BIND_OFFSET = 22),
+                        Break-mode epilogue at +28 patched from `C2 00 00` -&gt; `C2 0C 00`!
+  +96..+169  : Per-slot Machine-Code Thunk
+                 * Checks [pRegionBase] == 1 (returns S_OK = 0 immediately if Shutdown/Reset occurred)
+                 * Shifts (this, arg1, arg2), injects ObjPtr(ComCallbackHandler), allocates retval,
+                   and calls ComCallbackHandler.Handler_Invoke (vtable slot 7)
+  +176..+215 : Embedded COM Object + VTable (`VTABLE_OBJ_OFFSET = 176`)
+                 * +176           : pVTable -&gt; points to +184
+                 * +184 + 0*Ptr   : AddressOf Handler_QueryInterface (checks IID_IUnknown + m_iidTable(kind))
+                 * +184 + 1*Ptr   : AddressOf Handler_AddRef         (increments ComCallbackHandler.RefCount)
+                 * +184 + 2*Ptr   : AddressOf Handler_Release        (at RefCount=0, breaks owner cycle &amp; frees slot)
+                 * +184 + 3*Ptr   : pSlot                            (Invoke -&gt; VBE7 stub -&gt; Machine-Code Thunk)
+</code></pre>
+<blockquote>
+<p><strong>Invariant on <code>ComCallbackHandler.cls</code>:</strong> <code>Public Function Handler_Invoke(...)</code> <strong>must remain the very first procedure/property</strong> in <code>ComCallbackHandler.cls</code> (above all <code>Friend</code> properties/subs) so its vtable index is guaranteed to be <strong>slot 7</strong> on both 32-bit and 64-bit VBA.</p>
+</blockquote>
+<h3 id="53-zero-copymemory-safearray-primitives--vbe-reset-sentinel">5.3 Zero-<code>CopyMemory</code> <code>SAFEARRAY</code> Primitives &amp; VBE Reset Sentinel</h3>
+<ul>
+<li><strong><code>PointerAccessor</code> (<code>MemLongPtr</code> / <code>ReadLongPtr</code>):</strong> Instead of calling <code>kernel32!RtlMoveMemory</code> on every pointer read/write (which triggers P/Invoke overhead and <code>Err.LastDllError</code> side effects), <code>Wv2Thunks</code> overlays a 1-element <code>SAFEARRAY_1D</code> (<code>FADF_AUTO Or FADF_FIXEDSIZE</code>) onto a typed <code>LongPtr()</code> array for native memory speed.</li>
+<li><strong>VBE Reset Sentinel (<code>WV2_VBA_LastRegion</code>):</strong> Pressing the VBE <strong>Reset (Stop)</strong> button wipes all VBA module variables (<code>m_pRegionBase = 0</code>) without firing <code>Form_Unload</code>, leaving the <code>VirtualAlloc</code> region orphaned in <code>MSACCESS.EXE</code>. <code>Thunks_Init</code> stores <code>m_pRegionBase</code> in process environment variable <code>WV2_VBA_LastRegion</code>. On the next initialization after a VBE Reset, <code>Sentinel_RecoverIfNeeded</code> inspects the address via <code>VirtualQuery</code> (<code>MEM_COMMIT</code> + matching <code>AllocationBase</code> + read/write protection), zeroes the alive byte at <code>+0</code> so any stray WebView2 callback safely returns <code>S_OK</code>, and frees the previous block with <code>VirtualFree(..., MEM_RELEASE)</code>.</li>
+</ul>
+<hr />
+<h2 id="6-access-windowing--form-lifecycle-modwv2accesshost--frmwv2surface">6. Access Windowing &amp; Form Lifecycle (<code>modWv2AccessHost</code> &amp; <code>frmWv2Surface</code>)</h2>
+<h3 id="61-why-getaccessformcanvashwnd-exists-the-3-oformsub-z-order-rule">6.1 Why <code>GetAccessFormCanvasHwnd</code> Exists (The 3-<code>OFormSub</code> Z-Order Rule)</h3>
+<p>In Excel, <code>MSForms</code> UserForms host WebView2 inside a <code>Frame</code> control (<code>Frame1.[_GethWnd]</code>). In Microsoft Access, <strong>native controls (<code>Rectangle</code>, <code>TextBox</code>, <code>CommandButton</code>, <code>TabControl</code>) are windowless</strong> and have no <code>HWND</code>. Only <strong>Forms</strong> (<code>OForm</code> / <code>OFormPopup</code>) and <strong>Subforms</strong> (<code>OFormChild</code>) own real Win32 windows.</p>
+<p>Crucially, inspecting the live Win32 window hierarchy of an Access form reveals that Access <strong>always creates three <code>OFormSub</code> child windows</strong> under every <code>Form.hwnd</code> in fixed Z-order:</p>
+<pre><code class="language-text">OFormPopup / OFormChild (frm.hwnd)
+ ├── 1st OFormSub : FormHeader  &lt;-- Height is 0 px when the form has no header!
+ ├── 2nd OFormSub : Detail      &lt;-- Actual form body canvas (e.g., 944 x 544 px)
+ └── 3rd OFormSub : FormFooter  &lt;-- Height is 0 px when the form has no footer!
+</code></pre>
+<p>If code naively calls <code>FindWindowExW(frm.hwnd, 0, StrPtr(&quot;OFormSub&quot;), 0)</code> on a headerless subform like <code>frmWv2Surface</code>, Windows returns the <strong>1st <code>OFormSub</code> (<code>FormHeader</code>, height = <code>0 px</code>)</strong>. WebView2 initializes without error, executes JavaScript, and passes DOM queries—while clipping <code>Chrome_WidgetWin_0</code> inside a <code>0 px</code>-tall strip!</p>
+<p><code>modWv2AccessHost.GetAccessFormCanvasHwnd(frm)</code> solves this permanently by iterating all <code>OFormSub</code> children of <code>frm.hwnd</code>, measuring <code>GetClientRect</code>, and selecting the <strong>Detail <code>OFormSub</code> canvas</strong>.</p>
+<h3 id="62-subform-design-width--dpi-free-pixel-resizing">6.2 Subform Design Width &amp; DPI-Free Pixel Resizing</h3>
+<ol>
+<li><strong>Keep <code>frmWv2Surface.Width</code> Small in Design View (<code>1440</code> twips = 1 inch):</strong><br />
+If an Access subform's Design-View <code>Width</code> is wider than the <code>Subform</code> control (<code>subWebView</code>) on a parent form, Access sets the inner <code>OFormChild</code> width to <code>Max(subWebView.Width, frmWv2Surface.Width)</code>, clipping the right edge of the web page. Keeping <code>frmWv2Surface.Width = 1440</code> and <code>Detail.Height = 1440</code> lets <code>frmWv2Surface</code> shrink or expand to any container size cleanly.</li>
+<li><strong>Never Convert Twips to Pixels Manually:</strong><br />
+Access form geometry (<code>InsideWidth</code>, <code>InsideHeight</code>, <code>Left</code>, <code>Top</code>) is measured in <strong>Twips</strong> (<code>1440 twips/inch</code>), whereas <code>ICoreWebView2Controller::put_Bounds</code> expects <strong>physical client pixels</strong> (<code>RECT</code>). <code>frmWv2Surface.ResizeViewport</code> calls Win32 <code>GetClientRect(targetHwnd, rc)</code> directly on the Detail <code>OFormSub</code> <code>HWND</code>, obtaining exact <code>(0, 0, widthPx, heightPx)</code> coordinates across 100%, 125%, 150%, and Per-Monitor DPI v2 displays with zero rounding drift.</li>
+</ol>
+<h3 id="63-deterministic-teardown-form_unload--design-view-switches">6.3 Deterministic Teardown (<code>Form_Unload</code> &amp; Design View Switches)</h3>
+<p>Unlike Excel UserForms, Access users and developers can switch an open form directly from <strong>Form View -&gt; Design View</strong>. Always call <code>ShutdownWebView</code> inside <code>Form_Unload</code>:</p>
+<pre><code class="language-vba">Public Sub ShutdownWebView()
+    On Error Resume Next
+    If Not m_pane Is Nothing Then
+        m_pane.Ctrl_Close          ' Unregisters persistent handlers &amp; closes ICoreWebView2Controller
+        Set m_pane = Nothing       ' Releases ICoreWebView2_3 -&gt; _2 -&gt; ICoreWebView2 -&gt; Controller
+    End If
+    Set m_bridge = Nothing
+    Set m_env = Nothing            ' Releases ICoreWebView2Environment
+    On Error GoTo 0
+End Sub
+</code></pre>
+<p>Child-before-parent COM release order (<code>View3 -&gt; View2 -&gt; View -&gt; Controller -&gt; Environment</code>) is enforced inside <code>Wv2Pane.Class_Terminate</code> and <code>Wv2Environment.Class_Terminate</code>.</p>
+<hr />
+<h2 id="7-core-browser--viewport-api-reference-wv2environment--wv2pane">7. Core Browser &amp; Viewport API Reference (<code>Wv2Environment</code> &amp; <code>Wv2Pane</code>)</h2>
+<h3 id="wv2environment-srcwv2environmentcls"><code>Wv2Environment</code> (<code>src/Wv2Environment.cls</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>Member</th>
+<th>Signature</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Init</code></td>
+<td><code>Sub Init(ByVal userDataPath As String)</code></td>
+<td>Calls <code>CreateCoreWebView2EnvironmentWithOptions</code> asynchronously. Creates <code>userDataPath</code> recursively if missing (defaults to <code>C:\Temp\VBA_WebView2</code>; <code>modWv2AccessHost.GetDefaultUserDataFolder()</code> returns <code>%LOCALAPPDATA%\AccessWebview\UserData</code>).</td>
+</tr>
+<tr>
+<td><code>IsReady</code> / <code>IsFailed</code></td>
+<td><code>Property Get () As Boolean</code></td>
+<td>Poll with <code>DoEvents</code> until <code>IsReady</code> or <code>IsFailed</code> becomes <code>True</code>.</td>
+</tr>
+<tr>
+<td><code>LastError</code></td>
+<td><code>Property Get () As Long</code></td>
+<td><code>HRESULT</code> if initialization failed (<code>0</code> = <code>S_OK</code>).</td>
+</tr>
+<tr>
+<td><code>EnvironmentPtr</code></td>
+<td><code>Property Get () As LongPtr</code></td>
+<td>Raw <code>ICoreWebView2Environment*</code> COM interface pointer.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="wv2pane--lifecycle-navigation--settings-srcwv2panecls"><code>Wv2Pane</code> — Lifecycle, Navigation &amp; Settings (<code>src/Wv2Pane.cls</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Method / Property</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Controller</strong></td>
+<td><code>Init(env, hwnd)</code></td>
+<td>Asynchronously creates <code>ICoreWebView2Controller</code> parented to <code>hwnd</code>.</td>
+</tr>
+<tr>
+<td></td>
+<td><code>IsReady</code> / <code>IsFailed</code> / <code>LastError</code></td>
+<td>Readiness state of controller creation.</td>
+</tr>
+<tr>
+<td></td>
+<td><code>Ctrl_GetCoreWebView2() As Long</code></td>
+<td>Populates internal <code>m_pView</code> (<code>ICoreWebView2*</code>); call once immediately after <code>IsReady = True</code>.</td>
+</tr>
+<tr>
+<td></td>
+<td><code>Ctrl_PutBounds(bounds As RECT) As Long</code></td>
+<td>Resizes browser viewport in parent client pixels (<code>x86</code> 4-<code>Long</code> stack ABI &amp; <code>x64</code> pointer ABI handled automatically).</td>
+</tr>
+<tr>
+<td></td>
+<td><code>Ctrl_PutIsVisible(visible As Boolean) As Long</code></td>
+<td>Shows or hides the controller viewport (<code>True</code> normalized to Win32 <code>BOOL = 1</code>).</td>
+</tr>
+<tr>
+<td></td>
+<td><code>Ctrl_Close() As Long</code></td>
+<td>Closes controller, zeroes persistent tokens, and prevents further script calls.</td>
+</tr>
+<tr>
+<td><strong>Navigation</strong></td>
+<td><code>View_Navigate(url As String) As Long</code></td>
+<td>Navigates to an <code>https://</code>, <code>http://</code>, <code>file:///</code>, or virtual-host URL.</td>
+</tr>
+<tr>
+<td></td>
+<td><code>View_NavigateToString(htmlContent As String) As Long</code></td>
+<td>Renders an in-memory HTML string directly (<code>about:blank</code> origin).</td>
+</tr>
+<tr>
+<td></td>
+<td><code>View3_SetVirtualHostNameToFolderMapping(hostName, folderPath, accessKind) As Long</code></td>
+<td>Maps <code>https://&lt;hostName&gt;/</code> to a local folder (<code>0 = DENY</code>, <code>1 = ALLOW</code>, <code>2 = DENY_CORS</code>). Always navigate to an explicit file (e.g., <code>index.html</code>), as root <code>/</code> returns <code>ACCESS_DENIED</code>.</td>
+</tr>
+<tr>
+<td></td>
+<td><code>View_Reload()</code> / <code>View_Stop()</code></td>
+<td>Reloads current page or cancels in-progress navigation.</td>
+</tr>
+<tr>
+<td></td>
+<td><code>View_GoBack()</code> / <code>View_GoForward()</code></td>
+<td>Navigates session history (<code>View_GetCanGoBack</code> / <code>View_GetCanGoForward</code> check availability).</td>
+</tr>
+<tr>
+<td></td>
+<td><code>View_GetSource()</code> / <code>View_GetDocumentTitle()</code></td>
+<td>Returns current URL or <code>&lt;title&gt;</code> string.</td>
+</tr>
+<tr>
+<td><strong>Settings &amp; DevTools</strong></td>
+<td><code>Settings_PutAreDevToolsEnabled(v As Boolean) As Long</code></td>
+<td>Enables or disables F12 / programmatic DevTools.</td>
+</tr>
+<tr>
+<td></td>
+<td><code>View_OpenDevToolsWindow() As Long</code></td>
+<td>Opens the Chromium DevTools inspector window (<code>ICoreWebView2</code> vtable 51).</td>
+</tr>
+<tr>
+<td></td>
+<td><code>Settings_PutAreDefaultContextMenusEnabled(v As Boolean) As Long</code></td>
+<td>Enables or suppresses the right-click browser context menu (set <code>False</code> for locked-down production Access apps).</td>
+</tr>
+<tr>
+<td></td>
+<td><code>Settings_PutIsScriptEnabled(v As Boolean) As Long</code></td>
+<td>Enables or disables JavaScript execution on subsequent navigations.</td>
+</tr>
+<tr>
+<td><strong>Events</strong></td>
+<td><code>View_AddNavigationStarting</code> / <code>View_AddNavigationCompleted</code></td>
+<td>Subscribes to navigation lifecycle (<code>IsPageLoaded</code> tracks completion).</td>
+</tr>
+<tr>
+<td></td>
+<td><code>View_AddDocumentTitleChanged</code> / <code>View_AddHistoryChanged</code></td>
+<td>Tracks <code>&lt;title&gt;</code> updates and SPA <code>pushState</code> / <code>replaceState</code> / <code>popstate</code> URL transitions.</td>
+</tr>
+<tr>
+<td></td>
+<td><code>View2_AddDOMContentLoaded</code></td>
+<td>Subscribes to <code>ICoreWebView2_2::DOMContentLoaded</code> (fires before external images/subresources finish).</td>
+</tr>
+<tr>
+<td></td>
+<td><code>View_AddWebMessageReceived</code></td>
+<td>Enables <code>Public Event WebMessageReceived(messageText, messageJson)</code> and optional <code>SetWebMsgSink</code> forwarding.</td>
+</tr>
+<tr>
+<td></td>
+<td><code>View_AddNewWindowRequested</code></td>
+<td>Intercepts <code>window.open</code> / <code>target=&quot;_blank&quot;</code> links (<code>Wv2Browser</code> routes them into prewarmed tabs, preserving <code>POST</code> bodies and headers).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="8-javascript---access-vba--dao-ipc-patterns">8. JavaScript &lt;-&gt; Access VBA / DAO IPC Patterns</h2>
+<p><code>AccessWebview</code> supports three complementary communication channels between JavaScript and Access VBA:</p>
+<h3 id="pattern-a-direct-host-object-rpc-addhostobjecttoscript--recommended-for-spa-crud">Pattern A: Direct Host Object RPC (<code>AddHostObjectToScript</code>) — <em>Recommended for SPA CRUD</em></h3>
+<p>Register any VBA class instance <strong>before</strong> calling <code>View_Navigate</code> / <code>View_NavigateToString</code>:</p>
+<pre><code class="language-vba">Set m_bridge = New clsWv2AccessBridge
+m_pane.View_AddHostObjectToScript &quot;vba&quot;, m_bridge
+</code></pre>
+<p>JavaScript can invoke any <code>Public Function</code>, <code>Public Sub</code>, or <code>Public Property</code> on <code>clsWv2AccessBridge</code>:</p>
+<pre><code class="language-javascript">// 1. Async Proxy (Recommended — returns a Promise without freezing UI animations)
+const updatedJson = await window.chrome.webview.hostObjects.vba.AddTask(&quot;Audit Q4&quot;, &quot;Finance&quot;, &quot;High&quot;);
+
+// 2. Sync Proxy (Blocks JS until VBA returns; avoid calling EvalSync back into the same pane!)
+const pong = window.chrome.webview.hostObjects.sync.vba.Ping(&quot;Hello&quot;);
+</code></pre>
+<blockquote>
+<p><strong>DAO Performance Best Practice in Split Access Databases:</strong><br />
+When your Access front-end links to a shared network back-end <code>.accdb</code>, keep a persistent back-end <code>DAO.Database</code> handle open in your data service (<code>clsDb</code> / <code>OpenDatabase(backEndPath)</code>) and run SQL / <code>OpenRecordset</code> against that back-end handle inside your bridge methods rather than <code>CurrentDb</code> linked tables. Combined with <code>hostObjects.vba</code>, DAO reads/writes complete in <strong>&lt; 10–80 ms</strong> with zero timer-polling latency.</p>
+</blockquote>
+<h3 id="pattern-b-asynchronous-event-push-postmessage---webmessagereceived">Pattern B: Asynchronous Event Push (<code>postMessage</code> &lt;-&gt; <code>WebMessageReceived</code>)</h3>
+<p>Ideal for fire-and-forget notifications, streaming progress updates, or decoupled command buses:</p>
+<ul>
+<li><p><strong>VBA -&gt; JS (<code>View_PostWebMessageAsString</code>):</strong></p>
+<pre><code class="language-vba">m_pane.View_PostWebMessageAsString &quot;{&quot;&quot;event&quot;&quot;:&quot;&quot;recordSaved&quot;&quot;,&quot;&quot;id&quot;&quot;:42}&quot;
+</code></pre>
+<pre><code class="language-javascript">window.chrome.webview.addEventListener('message', (ev) =&gt; {
+    const msg = JSON.parse(ev.data);
+    console.log('Pushed from Access:', msg);
+});
+</code></pre>
+<p><em>(Ensure the page has finished <code>NavigationCompleted</code> or sent a <code>&quot;ready&quot;</code> message first; messages sent before JS registers its listener are dropped by WebView2.)</em></p>
+</li>
+<li><p><strong>JS -&gt; VBA (<code>window.chrome.webview.postMessage</code>):</strong></p>
+<pre><code class="language-javascript">window.chrome.webview.postMessage(JSON.stringify({ cmd: 'openReport', name: 'rptInvoice' }));
+</code></pre>
+<pre><code class="language-vba">Private WithEvents m_pane As Wv2Pane
+
+Private Sub m_pane_WebMessageReceived(ByVal messageText As String, ByVal messageJson As String)
+    ' messageText is populated when JS passes a String; messageJson is always populated as JSON!
+    Debug.Print &quot;Received from JS: &quot; &amp; messageText
+End Sub
+</code></pre>
+</li>
+</ul>
+<h3 id="pattern-c-synchronous-js-evaluation-from-vba-evalsync">Pattern C: Synchronous JS Evaluation from VBA (<code>EvalSync</code>)</h3>
+<p><code>Wv2Pane.EvalSync(jsExpr, Optional timeoutSec = 5)</code> wraps <code>jsExpr</code> inside a <code>try { ... } catch</code> + <code>JSON.stringify(...)</code> envelope, dispatches <code>ICoreWebView2::ExecuteScript</code>, pumps <code>DoEvents</code> until <code>HK_ExecuteScriptCompleted</code> arrives for that <code>callbackId</code>, unescapes the returned JSON string (including <code>&lt;</code> <code>\u003C</code> escapes and UTF-16 surrogate pairs), and sets <code>LastEvalOk</code> / <code>LastEvalError</code>:</p>
+<pre><code class="language-vba">Dim countStr As String
+countStr = p.EvalSync(&quot;document.querySelectorAll('.task-row').length&quot;)
+If p.LastEvalOk Then
+    Debug.Print &quot;Rendered rows: &quot; &amp; CLng(countStr)
+Else
+    Debug.Print &quot;Eval failed: &quot; &amp; p.LastEvalError
+End If
+</code></pre>
+<blockquote>
+<p><strong>Critical Re-Entrancy Rule (<code>m_inCallback</code> Guard):</strong><br />
+Never call <code>EvalSync</code>, <code>WaitFor</code>, or <code>Wv2Element</code> methods synchronously <em>inside</em> a <code>WebMessageReceived</code> or <code>NavigationCompleted</code> event handler. WebView2 holds its callback thread until <code>Handler_Invoke</code> returns, so blocking inside the handler for <code>ExecuteScriptCompleted</code> would deadlock. <code>Wv2Pane</code> detects <code>m_inCallback &gt; 0</code> and returns immediately with <code>LastEvalError = &quot;in-callback&quot;</code>. If you need to run <code>EvalSync</code> in response to an event, defer it by 10 ms via <code>SafeTimer</code> or the Access form's <code>Me.TimerInterval = 10</code> (<code>Form_Timer</code>).</p>
+</blockquote>
+<hr />
+<h2 id="9-dom-automation--spa-quiescence-api-wv2element--wv2pane-d-axis">9. DOM Automation &amp; SPA Quiescence API (<code>Wv2Element</code> &amp; <code>Wv2Pane</code> D-Axis)</h2>
+<p><code>Wv2Pane</code> injects a self-healing element registry (<code>window.__wv2Reg</code>) tagged with a per-document generation token (<code>'g' + Date.now() + '-' + Math.random()</code>). VBA receives lightweight integer handles wrapped in <code>Wv2Element</code> instances—eliminating CSS/JS quote-escaping bugs and automatically detecting stale elements after page navigations.</p>
+<h3 id="finding--waiting-for-elements-wv2pane">Finding &amp; Waiting for Elements (<code>Wv2Pane</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>Method / Property</th>
+<th>Return Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GetElementById(elementId)</code></td>
+<td><code>Wv2Element</code></td>
+<td>Finds <code>#elementId</code> (waits up to <code>ImplicitWaitSec</code> if <code>&gt; 0</code>; returns <code>Nothing</code> if absent).</td>
+</tr>
+<tr>
+<td><code>QuerySelector(selector)</code></td>
+<td><code>Wv2Element</code></td>
+<td>Finds first matching CSS selector (<code>Nothing</code> if not found; check <code>LastEvalOk</code> to distinguish &quot;not found&quot; from errors).</td>
+</tr>
+<tr>
+<td><code>QuerySelectorAll(selector, [maxCount=200])</code></td>
+<td><code>Collection</code></td>
+<td>Returns a 1-based <code>Collection</code> of <code>Wv2Element</code> objects (<strong>never <code>Nothing</code></strong>, even when <code>Count = 0</code>).</td>
+</tr>
+<tr>
+<td><code>WaitFor(selector, [timeoutSec=10])</code></td>
+<td><code>Wv2Element</code></td>
+<td>Polls until <code>selector</code> exists in the DOM or <code>timeoutSec</code> expires. Note: <code>WaitFor</code> returns an <strong>object</strong>—check <code>If p.WaitFor(&quot;#id&quot;, 10) Is Nothing Then</code>!</td>
+</tr>
+<tr>
+<td><code>WaitGone(selector, [timeoutSec=10])</code></td>
+<td><code>Boolean</code></td>
+<td>Polls until <code>selector</code> disappears from the DOM (ideal for loading spinners/overlays).</td>
+</tr>
+<tr>
+<td><code>ImplicitWaitSec</code></td>
+<td><code>Single</code></td>
+<td>Opt-in automatic wait duration (default <code>0</code>) applied to <code>QuerySelector</code> and <code>GetElementById</code>.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="inspecting--manipulating-elements-wv2element">Inspecting &amp; Manipulating Elements (<code>Wv2Element</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>Member</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.TagName</code></td>
+<td><code>String</code> (Get)</td>
+<td>Uppercase tag name (e.g., <code>&quot;INPUT&quot;</code>, <code>&quot;BUTTON&quot;</code>).</td>
+</tr>
+<tr>
+<td><code>.InnerText</code> / <code>.InnerHTML</code></td>
+<td><code>String</code> (Get)</td>
+<td>Reads rendered text or inner HTML markup.</td>
+</tr>
+<tr>
+<td><code>.value</code></td>
+<td><code>String</code> (Get/Let)</td>
+<td>Reads or sets form control values. <strong>React/Vue-safe:</strong> invokes the native <code>HTMLInputElement</code> / <code>HTMLTextAreaElement</code> / <code>HTMLSelectElement</code> prototype value setter and dispatches bubbling <code>input</code> + <code>change</code> events.</td>
+</tr>
+<tr>
+<td><code>.Click()</code></td>
+<td><code>Boolean</code></td>
+<td>Calls <code>.click()</code> on the element (<code>True</code> if the element was still live in the current DOM generation).</td>
+</tr>
+<tr>
+<td><code>.GetAttribute(name)</code> / <code>.SetAttribute(name, val)</code></td>
+<td><code>String</code> / <code>Boolean</code></td>
+<td>Reads or updates HTML attributes.</td>
+</tr>
+<tr>
+<td><code>.IsStale</code></td>
+<td><code>Boolean</code> (Get)</td>
+<td><code>True</code> if the page navigated or the element was removed from the registry.</td>
+</tr>
+<tr>
+<td><code>.LastOk</code> / <code>.LastError</code></td>
+<td><code>Boolean</code> / <code>String</code></td>
+<td>Status of the most recent operation on this element (<code>&quot;&quot;</code>, <code>&quot;stale&quot;</code>, <code>&quot;in-callback&quot;</code>, etc.).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="waiting-for-spa-quiescence-waitsettled--explicit-signals">Waiting for SPA Quiescence (<code>WaitSettled</code> &amp; Explicit Signals)</h3>
+<p>Modern SPAs update via <code>fetch()</code>, <code>XMLHttpRequest</code>, and microtask DOM mutations without firing <code>NavigationCompleted</code>. <code>Wv2Pane</code> includes an auto-injected SPA probe:</p>
+<ul>
+<li><strong><code>p.WaitSettled([timeoutSec=10], [quietMs=500]) As Boolean</code></strong> — Installs/verifies the in-page <code>fetch</code> + <code>XHR</code> + <code>MutationObserver</code> probe and waits until in-flight network requests hit <code>0</code> (excluding requests older than <code>StaleInflightMs</code>, default <code>15000 ms</code>) and no non-ignored DOM mutations occur for <code>quietMs</code>.</li>
+<li><strong>Explicit Signals (Arm <em>Before</em> Clicking):</strong>
+<ul>
+<li><code>p.ArmContentSignal(cssSelector)</code> — <code>WaitSettled</code> will not declare success until text inside <code>cssSelector</code> changes.</li>
+<li><code>p.ArmNetworkSignal(urlSubstring)</code> — Waits until at least one matching <code>fetch</code>/<code>XHR</code> completes.</li>
+<li><code>p.ArmUrlSignal(urlFragment)</code> — Waits until <code>location.href</code> contains <code>urlFragment</code>.</li>
+</ul>
+</li>
+<li><strong>Noise Filtering:</strong> <code>p.AddIgnoreNetwork(&quot;analytics&quot;)</code> and <code>p.IgnoreSelectors = &quot;.clock, .toast&quot;</code> exclude background telemetry or ticking UI timers from blocking <code>WaitSettled</code>.</li>
+</ul>
+<hr />
+<h2 id="10-network-traffic-inspection--capture-api-wv2pane-n-axis">10. Network Traffic Inspection &amp; Capture API (<code>Wv2Pane</code> N-Axis)</h2>
+<p><code>Wv2Pane</code> can capture live HTTP/HTTPS traffic (<code>WebResourceRequested</code> + <code>ICoreWebView2_2::WebResourceResponseReceived</code> + <code>GetContent</code>)—acting like a programmable F12 Network tab inside Access VBA:</p>
+<pre><code class="language-vba">' 1. Configure capture BEFORE navigating so the initial DOCUMENT request is recorded
+p.NetDetailOn = True            ' Capture request headers &amp; request body (IStream)
+p.NetRespBodyOn = True          ' Asynchronously capture decompressed response body
+p.NetDetailUriFilter = &quot;/api/&quot;  ' Optional substring filter for heavy detail capture
+p.NetCaptureStart               ' Default contexts: DOCUMENT, XML_HTTP_REQUEST, FETCH
+
+p.View_Navigate &quot;https://httpbingo.org/get&quot;
+p.WaitFor &quot;pre&quot;, 10
+
+' 2. Inspect captured entries (1..p.NetLogCount)
+Dim i As Long
+For i = 1 To p.NetLogCount
+    Debug.Print p.NetLogLine(i) &amp; &quot; -&gt; HTTP &quot; &amp; p.NetLogStatus(i)
+    Debug.Print p.NetDetailHeaders(i)
+    Debug.Print p.NetDetailRespBody(i)
+Next i
+
+p.NetCaptureStop
+</code></pre>
+<p><strong>Important Network Capture Guarantees:</strong></p>
+<ol>
+<li><strong>Non-Destructive Request Body Reading:</strong> Reading <code>ICoreWebView2WebResourceRequest::get_Content</code> advances the live <code>IStream</code> cursor; <code>Wv2Pane</code> automatically calls <code>IStream::Seek(0, STREAM_SEEK_SET, NULL)</code> afterward so <code>POST</code> bodies are never truncated on the wire.</li>
+<li><strong>Automatic Secret Redaction:</strong> <code>NetRedact</code> defaults to <code>True</code>, masking <code>Cookie</code>, <code>Authorization</code>, <code>Proxy-Authorization</code>, and <code>Set-Cookie</code> headers in output logs (<code>AddRedactHeader</code> adds custom headers).</li>
+<li><strong>Virtual Host Traffic Note:</strong> Requests served locally via <code>SetVirtualHostNameToFolderMapping</code> bypass Chromium's network stack and therefore do not appear in <code>WebResourceRequested</code> (external <code>https://</code> / <code>http://127.0.0.1</code> calls do).</li>
+</ol>
+<hr />
+<h2 id="11-multi-tab-management--deferred-timers-wv2browser-safetimer-libtimers">11. Multi-Tab Management &amp; Deferred Timers (<code>Wv2Browser</code>, <code>SafeTimer</code>, <code>LibTimers</code>)</h2>
+<ul>
+<li><strong><code>Wv2Browser</code> (<code>src/Wv2Browser.cls</code>):</strong> Manages a shared <code>Wv2Environment</code> and a 1-based <code>Collection</code> of <code>Wv2Pane</code> tabs sharing a single host <code>HWND</code>. Raises <code>TabAdded</code>, <code>TabClosed</code>, <code>ActiveChanged</code>, <code>TabTitleChanged</code>, and <code>TabUrlChanged</code> events.
+<ul>
+<li><strong>POST-Preserving Popup Capture (<code>NewWindowMode = 2</code>):</strong> Prewarms a hidden background <code>Wv2Pane</code> (<code>PREWARM_DELAY_MS = 1500 ms</code> after <code>Init</code>) and hands its <code>ICoreWebView2*</code> pointer directly to <code>ICoreWebView2NewWindowRequestedEventArgs::put_NewWindow</code>, preserving <code>POST</code> payloads, cookies, and <code>Sec-Fetch-User</code> headers when sites open new windows.</li>
+<li>Always call <code>m_browser.Shutdown</code> in <code>Form_Unload</code> to break the <code>Wv2Browser &lt;-&gt; Wv2Pane</code> back-reference before setting <code>m_browser = Nothing</code>.</li>
+</ul>
+</li>
+<li><strong><code>SafeTimer</code> (<code>src/SafeTimer.cls</code>) &amp; <code>LibTimers</code> (<code>src/LibTimers.bas</code>):</strong><br />
+Replaces the upstream Excel <code>TimerForm.frm</code> (<code>MSForms.UserForm</code>) with a lightweight Win32 <strong>message-only window</strong> (<code>CreateWindowExW(..., &quot;STATIC&quot;, ..., hWndParent:=HWND_MESSAGE)</code> where <code>HWND_MESSAGE = -3</code>) and cleans up deterministically via <code>KillTimer</code> + <code>DestroyWindow</code> in <code>Class_Terminate</code>. <code>LibTimers.GetTimerProc</code> patches VBE7's <code>EntryPoint</code> stub on both <code>x64</code> (<code>+55</code>) and <code>x86</code> (<code>+22</code>, plus <code>+30</code> patched to <code>RET 0x0010</code> for 4-argument <code>TIMERPROC</code> Break-mode safety).</li>
+</ul>
+<hr />
+<h2 id="12-32-bit-x86-vs-64-bit-x64-abi--edge-case-guarantees">12. 32-Bit (<code>x86</code>) vs. 64-Bit (<code>x64</code>) ABI &amp; Edge-Case Guarantees</h2>
+<table>
+<thead>
+<tr>
+<th>Subsystem</th>
+<th>64-Bit (<code>Win64</code>) Behavior</th>
+<th>32-Bit (<code>x86</code>) Behavior &amp; <code>AccessWebview</code> Guarantee</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>WebView2Loader.dll</code> Bitness</strong></td>
+<td>Loads 64-bit <code>C:\Program Files\Microsoft Office\root\Office16\WebView2Loader.dll</code></td>
+<td>Loads 32-bit <code>C:\Program Files (x86)\Microsoft Office\root\Office16\WebView2Loader.dll</code> (undecorated <code>__stdcall</code> exports; zero <code>Alias</code> changes needed).</td>
+</tr>
+<tr>
+<td><strong><code>VBE7.DLL</code> <code>EntryPoint</code> Stub</strong></td>
+<td>91-byte stub; <code>EbMode</code> at <code>+37</code>, target immediate at <code>+55</code>, <code>C2 00 00</code> (<code>RET</code>)</td>
+<td>33-byte stub; <code>EbMode</code> at <code>+10</code>, target immediate at <code>+22</code>, Break-mode epilogue at <code>+28</code> patched from <code>C2 00 00</code> to <strong><code>C2 0C 00</code> (<code>RET 12</code>)</strong> so Break mode never corrupts <code>ESP</code>.</td>
+</tr>
+<tr>
+<td><strong>Callback Machine-Code Thunk</strong></td>
+<td>74-byte MS x64 ABI thunk (<code>RCX, RDX, R8, R9</code> + <code>[RSP+0x20]</code> retval pointer)</td>
+<td>46-byte <code>__stdcall</code> thunk (<code>CMP [pRegionBase], 1</code> -&gt; <code>PUSH 0</code> retval slot -&gt; pushes <code>&amp;retval, arg2, arg1, this, pSelfObj</code> -&gt; <code>CALL Handler_Invoke</code> -&gt; <code>POP EAX</code> -&gt; <code>RET 0x000C</code>).</td>
+</tr>
+<tr>
+<td><strong><code>ICoreWebView2Controller::put_Bounds(RECT)</code></strong></td>
+<td>MS x64 ABI passes 16-byte <code>RECT</code> <strong>by pointer</strong> in <code>RDX</code> (<code>VarPtr(bounds)</code>)</td>
+<td>Win32 <code>x86</code> <code>__stdcall</code> passes 16-byte <code>RECT</code> <strong>by value on the stack as 4 <code>Long</code>s</strong> (<code>bounds.Left, bounds.Top, bounds.Right, bounds.Bottom</code>). Passing <code>VarPtr</code> on <code>x86</code> produced <code>0x0</code> bounds!</td>
+</tr>
+<tr>
+<td><strong><code>EventRegistrationToken</code> (<code>remove_*</code>) &amp; <code>IStream::Seek</code></strong></td>
+<td>8-byte <code>int64</code> passed in single 64-bit register</td>
+<td>Stored as 8-byte <strong><code>Currency</code> (<code>0@</code>, <code>vbCurrency</code>)</strong> so <code>DispCallFunc</code> pushes all 8 bytes onto the <code>x86</code> stack by value while <code>VarPtr(token)</code> remains valid for <code>[out] EventRegistrationToken*</code>.</td>
+</tr>
+<tr>
+<td><strong><code>ComCallbackHandler</code> VTable Slot 7</strong></td>
+<td><code>Public Function Handler_Invoke</code> placed after <code>Friend</code> members in upstream</td>
+<td>Moved <code>Handler_Invoke</code> to the <strong>top of <code>ComCallbackHandler.cls</code></strong> above all <code>Friend</code> procedures so slot 7 is strictly <code>Handler_Invoke</code> in Access VBE.</td>
+</tr>
+<tr>
+<td><strong><code>ICoreWebView2Environment</code> VTable</strong></td>
+<td><code>3 = CreateCoreWebView2Controller</code>, <code>4 = CreateWebResourceResponse</code>, <code>5 = get_BrowserVersionString</code></td>
+<td>Verified against <code>Microsoft.Web.WebView2.Core.dll</code> metadata: <code>get_BrowserVersionString</code> is <strong>vtable index 5</strong> (calling slot 4 with 1 arg faults <code>combase.dll</code> on <code>x86</code> stack mismatch).</td>
+</tr>
+<tr>
+<td><strong>Hex GUID Parsing (<code>HexStrToLong</code>)</strong></td>
+<td>Used <code>CLngLng(&quot;&amp;H&quot; &amp; s)</code></td>
+<td>Uses <code>CLng(&quot;&amp;H&quot; &amp; s)</code> (without trailing <code>&amp;</code>, which VBA rejects inside <code>CLng()</code> string parsing).</td>
+</tr>
+<tr>
+<td><strong>Deep <code>userDataFolder</code> Creation</strong></td>
+<td>Upstream <code>EnsureFolder</code> only created 1 parent level</td>
+<td>Recursive <code>EnsureFolder</code> creates arbitrary nested paths such as <code>%LOCALAPPDATA%\AccessWebview\UserData</code>.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="13-comparison-accesswebview-vs-native-access-edgebrowsercontrol">13. Comparison: <code>AccessWebview</code> vs. Native Access <code>EdgeBrowserControl</code></h2>
+<table>
+<thead>
+<tr>
+<th>Feature / Requirement</th>
+<th>Access 365 <code>EdgeBrowserControl</code> (<code>acEdgeBrowser</code>)</th>
+<th><code>AccessWebview</code> (<code>WebView2Loader.dll</code> + <code>DispCallFunc</code>)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>External Installation / Registry Admin</strong></td>
+<td>None</td>
+<td><strong>None</strong></td>
+</tr>
+<tr>
+<td><strong>Access 2016 / 2019 / 2021 / LTSC Support</strong></td>
+<td>Not available (Access 365 Current Channel only)</td>
+<td><strong>Supported</strong> anywhere Office + Edge WebView2 Runtime exist</td>
+</tr>
+<tr>
+<td><strong>JS -&gt; VBA Push (<code>postMessage</code>)</strong></td>
+<td>Blocked (requires <code>Form_Timer</code> + <code>RetrieveJavascriptValue</code> queue polling)</td>
+<td><strong>Native <code>WebMessageReceived</code> event</strong> (instant push, 0% idle CPU)</td>
+</tr>
+<tr>
+<td><strong>Direct JS -&gt; VBA Object RPC (<code>hostObjects</code>)</strong></td>
+<td>Not exposed</td>
+<td><strong>Full <code>chrome.webview.hostObjects.vba.*</code> (async &amp; sync)</strong></td>
+</tr>
+<tr>
+<td><strong>Local Multi-File SPA Hosting</strong></td>
+<td>Requires <code>https://msaccess/C:\...</code> URL rewriting + <code>MSysResources</code> table</td>
+<td><strong><code>SetVirtualHostNameToFolderMapping</code></strong> (<code>https://appassets.access.local/</code>) — zero <code>MSysResources</code> rows, full ES modules &amp; <code>pushState</code></td>
+</tr>
+<tr>
+<td><strong>External Link / Domain Whitelist</strong></td>
+<td>Enforced (<code>MSysResources</code> opens unwhitelisted URLs in external Edge)</td>
+<td><strong>Full programmatic control</strong> via <code>NavigationStarting</code> / <code>NewWindowRequested</code></td>
+</tr>
+<tr>
+<td><strong>F12 DevTools &amp; Custom <code>userDataFolder</code></strong></td>
+<td>Restricted / opaque</td>
+<td><strong>Full control</strong> (<code>View_OpenDevToolsWindow</code>, per-app <code>userDataFolder</code>)</td>
+</tr>
+<tr>
+<td><strong>Network Header &amp; Body Capture</strong></td>
+<td>Not available</td>
+<td><strong>Built-in (<code>NetCaptureStart</code>, <code>NetDetailOn</code>, <code>NetRespBodyOn</code>)</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="14-diagnostics-logging-wv2log-testing--troubleshooting">14. Diagnostics, Logging (<code>Wv2Log</code>), Testing &amp; Troubleshooting</h2>
+<h3 id="structured-file-logging-wv2logbas">Structured File Logging (<code>Wv2Log.bas</code>)</h3>
+<p>Immediate Window (<code>Debug.Print</code>) output scrolls rapidly during <code>EvalSync</code> polling or network capture. <code>Wv2Log</code> writes sequenced, timestamped UTF-8 logs to <code>%APPDATA%\Wv2Browser\logs\wv2_YYYYMMDD_HHNNSS.log</code> (retaining the latest 20 files automatically):</p>
+<pre><code class="language-vba">Wv2Log.LogStart
+Wv2Log.LogLevel = LOG_DEBUG   ' LOG_ERROR=1, LOG_WARN=2, LOG_INFO=3, LOG_DEBUG=4
+Wv2Log.LogEcho = False        ' Suppress Debug.Print echo for maximum speed
+Debug.Print Wv2Log.LogPath    ' Inspect active UTF-8 log file path
+' ... run automation ...
+Wv2Log.LogStop
+</code></pre>
+<h3 id="running-the-automated-verification-suite">Running the Automated Verification Suite</h3>
+<p>Open <code>AccessWebview.accdb</code>, press <strong>Ctrl+G</strong>, and run the three verification stages in <code>modWv2AccessHost</code>:</p>
+<pre><code class="language-vba">? VerifyStep1_MockThunks()
+' PASS: Mock QI + AddRef + Release + VBE7/MachineCode Thunk Invoke all succeeded!
+
+? VerifyStep2_RealEnvironment()
+' PASS: Real WebView2 Environment created via Office16\WebView2Loader.dll! Runtime=155.0.4283.45
+
+? VerifyStep3_FullSpaAndBridge()
+' PASS | Badge=[Microsoft Access 16.0.20430 (x86)] | Tasks: 4 -&gt; 5 | LastPostMessage=[hello-from-webview2-js] | Url=https://appassets.access.local/index.html
+</code></pre>
+<h3 id="operational-rules--troubleshooting">Operational Rules &amp; Troubleshooting</h3>
+<ol>
+<li><strong>Do Not Step (<code>F8</code>) Through the Async Init Burst or <code>EvalSync</code> Loops:</strong><br />
+While the 33-byte/91-byte <code>VBE7</code> <code>EntryPoint</code> stub safely suppresses callbacks once VBE is already in Break mode (<code>EbMode = 2</code>), hitting a breakpoint in the microsecond <em>between</em> the stub's <code>EbMode</code> check and <code>Handler_Invoke</code> during heavy WebView2 startup can fault <code>MSACCESS.EXE</code>. Place breakpoints <em>after</em> <code>InitSpa</code> completes or inspect behavior via <code>Wv2Log</code>.</li>
+<li><strong>Access VBE Cached P-Code After External Binary Edits:</strong><br />
+Access <code>.accdb</code> files store both compressed VBA source and compiled p-code streams. If you edit modules externally (e.g., via XLIDE while Access is closed), run <strong>Debug -&gt; Compile</strong> (or <code>/decompile</code> + Compile) in Access so Access regenerates p-code from the updated source.</li>
+<li><strong>Keep <code>userDataFolder</code> on Local Disk (<code>%LOCALAPPDATA%</code>):</strong><br />
+Even when <code>AccessWebview.accdb</code> and <code>spa\</code> live on a UNC/SMB network share (<code>K:\...</code>), always point <code>userDataFolder</code> to a local path such as <code>Environ$(&quot;LOCALAPPDATA&quot;) &amp; &quot;\MyApp\WebView2&quot;</code> (<code>GetDefaultUserDataFolder()</code>). Chromium's profile lock/SQLite cache files perform poorly or fail to lock over SMB shares.</li>
+<li><strong>Access/VBA Naming &amp; Module Editing Conventions:</strong>
+<ul>
+<li>Keep <code>Option Explicit</code> at the top of every module, class, and form.</li>
+<li>Never insert procedures above <code>Handler_Invoke</code> in <code>ComCallbackHandler.cls</code> (must stay vtable slot 7) or above <code>StartTimer</code> / <code>TimerProc</code> in <code>SafeTimer.cls</code> (must stay vtable slots 7 &amp; 8).</li>
+<li>Avoid Access/VBA/JET reserved words (<code>Name</code>, <code>Value</code>, <code>Date</code>, <code>Count</code>, <code>Index</code>, <code>Form</code>, <code>Section</code>, <code>Table</code>) for new public identifiers.</li>
+</ul>
+</li>
+</ol>
+
+</body></html>

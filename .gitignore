@@ -1,0 +1,11 @@
+# Excluded project artifacts
+*.zip
+*.xlide_settings.json
+WebView2-For-Access-Feasibility-Evaluation.md
+WebView2-For-Access-Feasibility-Evaluation.html
+
+# Microsoft Access lock & backup files
+*.laccdb
+*.ldb
+*.bak
+~$*
