@@ -36,12 +36,23 @@ Public Sub RefreshHeaderAndViewport()
         Me.cmdOpenDevTools.Left = Me.InsideWidth - Me.cmdOpenDevTools.Width - 180
         Me.cmdPushToJs.Left = Me.cmdOpenDevTools.Left - Me.cmdPushToJs.Width - 120
         Me.lblBanner.Width = Me.cmdPushToJs.Left - 360
+        If Me.Width < Me.InsideWidth Then Me.Width = Me.InsideWidth
         Me.subWebView.Left = 0
         Me.subWebView.Top = 0
         Me.subWebView.Width = Me.InsideWidth
     End If
     If Me.InsideHeight > 1200 Then
-        Me.subWebView.Height = Me.InsideHeight - Me.FormHeader.Height
+        Dim targetH As Long
+        targetH = Me.InsideHeight - Me.FormHeader.Height
+        If targetH > 0 Then
+            If targetH > Me.Detail.Height Then
+                Me.Detail.Height = targetH
+                Me.subWebView.Height = targetH
+            Else
+                Me.subWebView.Height = targetH
+                Me.Detail.Height = targetH
+            End If
+        End If
     End If
     Dim surf As Form_frmWv2Surface
     Set surf = GetSurface()
@@ -79,6 +90,7 @@ End Sub
 Private Sub Form_Resize()
     RefreshHeaderAndViewport
 End Sub
+
 Private Sub cmdPushToJs_Click()
     Dim p As Wv2Pane
     Set p = Me.ActivePane
@@ -101,6 +113,7 @@ Private Sub Form_Unload(Cancel As Integer)
     Dim surf As Form_frmWv2Surface
     Set surf = GetSurface()
     If Not (surf Is Nothing) Then surf.ShutdownWebView
+    ShutdownAccessFormWebViews Me
     Set m_bridge = Nothing
     On Error GoTo 0
 End Sub

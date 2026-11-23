@@ -15,7 +15,7 @@ It requires **zero COM/ActiveX registration**, **zero VBA Tools -> References** 
 3. [Quick-Start Recipes](#3-quick-start-recipes)
 4. [Architecture Overview](#4-architecture-overview)
 5. [Low-Level COM & Callback Thunk Internals (`Wv2Thunks` & `ComCallbackHandler`)](#5-low-level-com--callback-thunk-internals-wv2thunks--comcallbackhandler)
-6. [Access Windowing & Form Lifecycle (`modWv2AccessHost` & `frmWv2Surface`)](#6-access-windowing--form-lifecycle-modwv2accesshost--frmwv2surface)
+6. [Access Windowing & Form Lifecycle (`clsWv2Host`, `modWv2AccessHost` & `frmWv2Surface`)](#6-access-windowing--form-lifecycle-clswv2host-modwv2accesshost--frmwv2surface)
 7. [Core Browser & Viewport API Reference (`Wv2Environment` & `Wv2Pane`)](#7-core-browser--viewport-api-reference-wv2environment--wv2pane)
 8. [JavaScript <-> Access VBA / DAO IPC Patterns](#8-javascript---access-vba--dao-ipc-patterns)
 9. [DOM Automation & SPA Quiescence API (`Wv2Element` & `Wv2Pane` D-Axis)](#9-dom-automation--spa-quiescence-api-wv2element--wv2pane-d-axis)
@@ -35,25 +35,26 @@ It requires **zero COM/ActiveX registration**, **zero VBA Tools -> References** 
 |---|---|
 | [`./AccessWebview.accdb`](./AccessWebview.accdb) | Reference host database (compiled & verified in 32-bit `MSACCESS.EXE` `16.0.20430.20180`; compatible with 64-bit Access) |
 | [`./spa/index.html`](./spa/index.html) | Sample dark-mode SPA mounted at `https://appassets.access.local/index.html` demonstrating `hostObjects.vba` DAO CRUD + bidirectional `postMessage` |
-| [`./src/`](./src) | Exported 7-bit ASCII VBA source for all 16 modules, classes, and Access forms (managed via XLIDE) |
+| [`./src/`](./src) | Exported 7-bit ASCII VBA source for all 17 modules, classes, and Access forms (managed via XLIDE) |
 | [`./AccessWebview-Live-Verified.png`](./AccessWebview-Live-Verified.png) | Live screenshot of `frmWv2Demo` running in 32-bit Microsoft Access |
 | [`./README.md`](./README.md) / [`./README.html`](./README.html) | Developer documentation (Markdown & standalone HTML) |
 
 ### VBA Module Inventory (`src/`)
 
-Depending on whether you are building a **single-pane Access SPA** or a **multi-tab automation browser**, you can import either the **Lean SPA Core (9 objects)** or the **Full Suite (16 objects)**:
+Depending on whether you are building a **single-pane Access SPA** or a **multi-tab automation browser**, you can import either the **Lean SPA Core (10 objects, plus `SafeTimer` & `LibTimers`)** or the **Full Suite (17 objects)**:
 
 | Module / Form | Type | Tier | Lines | Responsibility |
 |---|---|---|---:|---|
 | [`Wv2Thunks.bas`](./src/Wv2Thunks.bas) | Standard | **Core** | 2,716 | `WebView2Loader.dll` declaration, `DispCallFunc` (`dcf`), `VirtualAlloc` 512-slot callback pool, `x86`/`x64` machine-code thunks, IID table, `SAFEARRAY` memory primitives, and VBE Reset Sentinel |
 | [`ComCallbackHandler.cls`](./src/ComCallbackHandler.cls) | Class | **Core** | 166 | Receives all 13 `HandlerKind` COM callbacks at fixed vtable slot 7 (`Handler_Invoke`) and routes them to owner classes |
 | [`Wv2Environment.cls`](./src/Wv2Environment.cls) | Class | **Core** | 255 | Asynchronous `ICoreWebView2Environment` bootstrapper and COM pointer lifetime wrapper |
-| [`Wv2Pane.cls`](./src/Wv2Pane.cls) | Class | **Core** | 7,998 | `ICoreWebView2Controller` + `ICoreWebView2` / `_2` / `_3` wrapper, `EvalSync`, DOM queries, quiescence probes, and network capture |
+| [`Wv2Pane.cls`](./src/Wv2Pane.cls) | Class | **Core** | 8,006 | `ICoreWebView2Controller` + `ICoreWebView2` / `_2` / `_3` wrapper, `EvalSync`, DOM queries, quiescence probes, and network capture |
 | [`Wv2Element.cls`](./src/Wv2Element.cls) | Class | **Core** | 489 | Generation-checked DOM element handle (`InnerText`, `InnerHTML`, `Value`, `Click`, `GetAttribute`, `SetAttribute`) |
 | [`Wv2Json.bas`](./src/Wv2Json.bas) | Standard | **Core** | 373 | Pure-VBA JSON escaping, unescaping (including UTF-16 surrogate pairs), and lightweight key extraction |
 | [`Wv2Log.bas`](./src/Wv2Log.bas) | Standard | **Core** | 514 | Sequenced UTF-8 file logger (`%APPDATA%\Wv2Browser\logs`) with automatic log rotation |
-| [`modWv2AccessHost.bas`](./src/modWv2AccessHost.bas) | Standard | **Core** | 259 | Access `OFormSub` Detail HWND resolver (`GetAccessFormCanvasHwnd`), folder helpers, and 3-step self-test suite |
-| [`Form_frmWv2Surface.cls`](./src/Form_frmWv2Surface.cls) | Form | **Core** | 143 | Reusable borderless Access Subform canvas (`InitSpa`, `ResizeViewport`, `ShutdownWebView`, `WebMessageReceived` sink) |
+| [`clsWv2Host.cls`](./src/clsWv2Host.cls) | Class | **Core** | 167 | Persistent Access WebView2 controller host that survives Access Subform (`OFormChild`) recreation during grow/maximize resizes |
+| [`modWv2AccessHost.bas`](./src/modWv2AccessHost.bas) | Standard | **Core** | 440 | Access `OFormSub` / `OFormChild` HWND resolver, `clsWv2Host` registry, Z-order sync, and 4-step self-test suite |
+| [`Form_frmWv2Surface.cls`](./src/Form_frmWv2Surface.cls) | Form | **Core** | 129 | Reusable borderless Access Subform canvas (`InitSpa`, `ResizeViewport`, `ShutdownWebView`) backed by `clsWv2Host` |
 | [`clsWv2AccessBridge.cls`](./src/clsWv2AccessBridge.cls) | Class | App | 152 | Example DAO RPC bridge exposed to JavaScript as `window.chrome.webview.hostObjects.vba` |
 | [`Form_frmWv2Demo.cls`](./src/Form_frmWv2Demo.cls) | Form | App | 106 | Example Access host form combining native Access header controls with `frmWv2Surface` |
 | [`Wv2Browser.cls`](./src/Wv2Browser.cls) | Class | Multi-Tab | 2,860 | Multi-tab controller, tab events, and `put_NewWindow` prewarmed popup tab delegation |
@@ -77,7 +78,7 @@ Depending on whether you are building a **single-pane Access SPA** or a **multi-
 ### Integrating into an Existing `.accdb` Application
 
 1. **Import the Core Modules:**  
-   Copy or import `Wv2Thunks`, `ComCallbackHandler`, `Wv2Environment`, `Wv2Pane`, `Wv2Element`, `Wv2Json`, `Wv2Log`, `modWv2AccessHost`, and the reusable form **`frmWv2Surface`** from `AccessWebview.accdb` into your front-end `.accdb` (*External Data -> New Data Source -> From Database -> Access*).
+   Copy or import `Wv2Thunks`, `ComCallbackHandler`, `Wv2Environment`, `Wv2Pane`, `Wv2Element`, `Wv2Json`, `Wv2Log`, `SafeTimer`, `LibTimers`, `clsWv2Host`, `modWv2AccessHost`, and the reusable form **`frmWv2Surface`** from `AccessWebview.accdb` into your front-end `.accdb` (*External Data -> New Data Source -> From Database -> Access*).
 2. **Drop `frmWv2Surface` onto Your Host Form:**  
    - Open your host form in Design View and add a **Subform/Subreport** control named `subWebView` with `SourceObject = "frmWv2Surface"`, `BorderStyle = Transparent (0)`.
    - If using Access layout anchoring, set `HorizontalAnchor = Both` and `VerticalAnchor = Both`—or resize `Me.subWebView` explicitly in `Form_Resize` (recommended for pixel-tight full-bleed layouts).
@@ -299,50 +300,46 @@ Slot Layout (224 bytes per slot; pVTableObj = pSlot + 176 passed to WebView2 as 
 
 ---
 
-## 6. Access Windowing & Form Lifecycle (`modWv2AccessHost` & `frmWv2Surface`)
+## 6. Access Windowing & Form Lifecycle (`clsWv2Host`, `modWv2AccessHost` & `frmWv2Surface`)
 
-### 6.1 Why `GetAccessFormCanvasHwnd` Exists (The 3-`OFormSub` Z-Order Rule)
+### 6.1 The Two Access Windowing Traps (`3-OFormSub` Z-Order & Subform `OFormChild` Recreation on Grow)
 
-In Excel, `MSForms` UserForms host WebView2 inside a `Frame` control (`Frame1.[_GethWnd]`). In Microsoft Access, **native controls (`Rectangle`, `TextBox`, `CommandButton`, `TabControl`) are windowless** and have no `HWND`. Only **Forms** (`OForm` / `OFormPopup`) and **Subforms** (`OFormChild`) own real Win32 windows.
-
-Crucially, inspecting the live Win32 window hierarchy of an Access form reveals that Access **always creates three `OFormSub` child windows** under every `Form.hwnd` in fixed Z-order:
+In Excel, `MSForms` UserForms host WebView2 inside a `Frame` control (`Frame1.[_GethWnd]`). In Microsoft Access, **native controls (`Rectangle`, `TextBox`, `CommandButton`, `TabControl`) are windowless** and have no `HWND`. Only **Forms** (`OForm` / `OFormPopup`) and **Subforms** (`OFormChild`) own real Win32 windows:
 
 ```text
-OFormPopup / OFormChild (frm.hwnd)
+OFormPopup / OForm (Parent Form.hwnd — IMMORTAL across all resizes)
  ├── 1st OFormSub : FormHeader  <-- Height is 0 px when the form has no header!
- ├── 2nd OFormSub : Detail      <-- Actual form body canvas (e.g., 944 x 544 px)
+ ├── 2nd OFormSub : Detail      <-- IMMORTAL section canvas (never recreated on resize!)
+ │     └── OFormChild (Subform.Form.hwnd) <-- EPHEMERAL! Destroyed & reloaded whenever Subform grows!
  └── 3rd OFormSub : FormFooter  <-- Height is 0 px when the form has no footer!
 ```
 
-If code naively calls `FindWindowExW(frm.hwnd, 0, StrPtr("OFormSub"), 0)` on a headerless subform like `frmWv2Surface`, Windows returns the **1st `OFormSub` (`FormHeader`, height = `0 px`)**. WebView2 initializes without error, executes JavaScript, and passes DOM queries—while clipping `Chrome_WidgetWin_0` inside a `0 px`-tall strip!
+Hosting WebView2 reliably in Access requires solving **two distinct Access windowing behaviors**:
 
-`modWv2AccessHost.GetAccessFormCanvasHwnd(frm)` solves this permanently by iterating all `OFormSub` children of `frm.hwnd`, measuring `GetClientRect`, and selecting the **Detail `OFormSub` canvas**.
+1. **Trap #1 — The `0 px` `FormHeader` `OFormSub`:**  
+   Access always creates **three** `OFormSub` children under every `Form.hwnd` (`FormHeader`, `Detail`, `FormFooter`). Calling `FindWindowExW(frm.hwnd, 0, StrPtr("OFormSub"), 0)` on a headerless form returns the **1st `OFormSub` (`FormHeader`, height = `0 px`)**, clipping `Chrome_WidgetWin_0` to `0 px` height!
+2. **Trap #2 — Subform `OFormChild` Destruction & VBA Reload When Growing/Maximizing:**  
+   Whenever an Access `Subform` control (`OFormChild`) **grows larger than its previous high-water size** (dragging a window edge outward or clicking Maximize), Microsoft Access **destroys the `OFormChild` Win32 window, fires `Subform.Form_Unload`, creates a brand-new `OFormChild` `HWND`, and instantiates a fresh VBA `Form_frmWv2Surface` instance!**
+   - If `ICoreWebView2Controller` were parented inside `OFormChild`, Win32 `DestroyWindow` would recursively destroy `Chrome_WidgetWin_0`, turning the WebView blank permanently!
+   - If `m_pane` lived directly on `Form_frmWv2Surface`, `Form_Unload` would close `m_pane` and the newly created `Form_frmWv2Surface` would wake up with `m_pane Is Nothing`!
 
-### 6.2 Subform Design Width & DPI-Free Pixel Resizing
+`AccessWebview` solves both traps transparently via **`clsWv2Host`** + **`modWv2AccessHost`**:
+- When `frmWv2Surface` is hosted inside a Subform (`GetWinClassName(Me.hwnd) = "OFormChild"`), `GetAccessFormCanvasHwnd` returns **`GetParent(Me.hwnd)`**—the parent form's **immortal section `OFormSub`**, which is never destroyed during shrink, grow, maximize, or restore.
+- `clsWv2Host` owns `m_env` and `m_pane` outside the ephemeral subform instance and registers itself in `modWv2AccessHost` keyed by `hostHwnd`. When Access reloads `Form_frmWv2Surface` during a grow resize, `EnsureHost()` seamlessly reconnects the new subform instance to the live `clsWv2Host`, maps the subform's screen bounds into `hostHwnd` client pixels via `MapWindowPoints`, calls `Ctrl_PutBounds` + `Ctrl_NotifyParentWindowPositionChanged`, and keeps `Chrome_WidgetWin_0` at `HWND_TOP` (`SyncAccessWebViewZOrder`).
+
+### 6.2 Subform Design Width, Section Height Ordering & DPI-Free Pixel Resizing
 
 1. **Keep `frmWv2Surface.Width` Small in Design View (`1440` twips = 1 inch):**  
-   If an Access subform's Design-View `Width` is wider than the `Subform` control (`subWebView`) on a parent form, Access sets the inner `OFormChild` width to `Max(subWebView.Width, frmWv2Surface.Width)`, clipping the right edge of the web page. Keeping `frmWv2Surface.Width = 1440` and `Detail.Height = 1440` lets `frmWv2Surface` shrink or expand to any container size cleanly.
-2. **Never Convert Twips to Pixels Manually:**  
-   Access form geometry (`InsideWidth`, `InsideHeight`, `Left`, `Top`) is measured in **Twips** (`1440 twips/inch`), whereas `ICoreWebView2Controller::put_Bounds` expects **physical client pixels** (`RECT`). `frmWv2Surface.ResizeViewport` calls Win32 `GetClientRect(targetHwnd, rc)` directly on the Detail `OFormSub` `HWND`, obtaining exact `(0, 0, widthPx, heightPx)` coordinates across 100%, 125%, 150%, and Per-Monitor DPI v2 displays with zero rounding drift.
+   If an Access subform's Design-View `Width` is wider than `subWebView.Width`, Access forces the inner `OFormChild` width to `Max(subWebView.Width, frmWv2Surface.Width)`. Keeping `frmWv2Surface.Width = 1440` and `Detail.Height = 1440` lets `frmWv2Surface` shrink or expand to any container size cleanly.
+2. **Expand `Detail.Height` Before `subWebView.Height` When Resizing in VBA:**  
+   If resizing `subWebView` in `Form_Resize`, Access rejects `subWebView.Height = targetH` if `targetH > Me.Detail.Height`. Expand `Me.Detail.Height` *first* when growing, and shrink `Me.subWebView.Height` *first* when shrinking (as shown in `Form_frmWv2Demo.RefreshHeaderAndViewport`).
+3. **Never Convert Twips to Pixels Manually:**  
+   `GetAccessFormViewportRect` uses Win32 `GetWindowRect` + `MapWindowPoints` / `GetClientRect` directly in physical pixels, avoiding Twips-to-Pixels rounding drift across 100%, 125%, 150%, and Per-Monitor DPI v2 displays.
 
-### 6.3 Deterministic Teardown (`Form_Unload` & Design View Switches)
+### 6.3 Double-Safe Deterministic Teardown (`Form_Unload` & `SafeTimer` Orphan Check)
 
-Unlike Excel UserForms, Access users and developers can switch an open form directly from **Form View -> Design View**. Always call `ShutdownWebView` inside `Form_Unload`:
-
-```vba
-Public Sub ShutdownWebView()
-    On Error Resume Next
-    If Not m_pane Is Nothing Then
-        m_pane.Ctrl_Close          ' Unregisters persistent handlers & closes ICoreWebView2Controller
-        Set m_pane = Nothing       ' Releases ICoreWebView2_3 -> _2 -> ICoreWebView2 -> Controller
-    End If
-    Set m_bridge = Nothing
-    Set m_env = Nothing            ' Releases ICoreWebView2Environment
-    On Error GoTo 0
-End Sub
-```
-
-Child-before-parent COM release order (`View3 -> View2 -> View -> Controller -> Environment`) is enforced inside `Wv2Pane.Class_Terminate` and `Wv2Environment.Class_Terminate`.
+- **Explicit Teardown:** In your parent form's `Form_Unload`, call `Me.subWebView.Form.ShutdownWebView` and `ShutdownAccessFormWebViews Me` (which tears down any `clsWv2Host` attached to the form's `OFormSub` sections even if Access unloaded the subform first during a Form View -> Design View switch).
+- **Automatic Orphan Safety Net:** Whenever `frmWv2Surface.Form_Unload` fires on a subform, `clsWv2Host.ScheduleOrphanCheck` arms an 80 ms one-shot `SafeTimer`. If `Form_Unload` was merely a resize-triggered `OFormChild` swap, `IsWindow(m_hostHwnd)` is still non-zero and the WebView continues uninterrupted; if the parent form actually closed (even without parent `Form_Unload` code), `IsWindow(m_hostHwnd)` is `0` and `clsWv2Host.Shutdown` releases all WebView2 COM pointers (`View3 -> View2 -> View -> Controller -> Environment`) automatically.
 
 ---
 
@@ -589,7 +586,7 @@ Wv2Log.LogStop
 
 ### Running the Automated Verification Suite
 
-Open `AccessWebview.accdb`, press **Ctrl+G**, and run the three verification stages in `modWv2AccessHost`:
+Open `AccessWebview.accdb`, press **Ctrl+G**, and run the four verification stages in `modWv2AccessHost`:
 
 ```vba
 ? VerifyStep1_MockThunks()
@@ -600,6 +597,9 @@ Open `AccessWebview.accdb`, press **Ctrl+G**, and run the three verification sta
 
 ? VerifyStep3_FullSpaAndBridge()
 ' PASS | Badge=[Microsoft Access 16.0.20430 (x86)] | Tasks: 4 -> 5 | LastPostMessage=[hello-from-webview2-js] | Url=https://appassets.access.local/index.html
+
+? VerifyStep4_ResizeSurvival()
+' PASS | Init="960x592" -> Shrink="720x432" -> Grow="1120x708" -> Max="1534x752" -> Restore="1120x708"
 ```
 
 ### Operational Rules & Troubleshooting

@@ -10,23 +10,37 @@ Option Compare Database
 Option Explicit
 
 
-Private m_env As Wv2Environment
-Private WithEvents m_pane As Wv2Pane
-Attribute m_pane.VB_VarHelpID = -1
-Private m_bridge As Object
-Private m_lastWebMessage As String
-Private m_lastWebMessageJson As String
+Private m_host As clsWv2Host
+Private m_hostHwnd As LongPtr
+
+Private Function EnsureHost() As clsWv2Host
+    If Not (m_host Is Nothing) Then
+        Set EnsureHost = m_host
+        Exit Function
+    End If
+    If m_hostHwnd = 0 Then m_hostHwnd = GetAccessFormCanvasHwnd(Me)
+    If m_hostHwnd <> 0 Then
+        Set m_host = GetRegisteredAccessHost(m_hostHwnd)
+    End If
+    Set EnsureHost = m_host
+End Function
 
 Public Property Get pane() As Wv2Pane
-    Set pane = m_pane
+    Dim h As clsWv2Host
+    Set h = EnsureHost()
+    If Not (h Is Nothing) Then Set pane = h.pane
 End Property
 
 Public Property Get LastWebMessage() As String
-    LastWebMessage = m_lastWebMessage
+    Dim h As clsWv2Host
+    Set h = EnsureHost()
+    If Not (h Is Nothing) Then LastWebMessage = h.LastWebMessage
 End Property
 
 Public Property Get LastWebMessageJson() As String
-    LastWebMessageJson = m_lastWebMessageJson
+    Dim h As clsWv2Host
+    Set h = EnsureHost()
+    If Not (h Is Nothing) Then LastWebMessageJson = h.LastWebMessageJson
 End Property
 
 Public Function InitSpa( _
@@ -39,59 +53,33 @@ Public Function InitSpa( _
 
     On Error GoTo ErrHandler
 
-    Dim uFolder As String
-    uFolder = userDataFolder
-    If Len(uFolder) = 0 Then uFolder = GetDefaultUserDataFolder()
+    m_hostHwnd = GetAccessFormCanvasHwnd(Me)
+    If m_hostHwnd = 0 Then Exit Function
 
-    Set m_env = New Wv2Environment
-    m_env.Init uFolder
-
-    Dim t0 As Single
-    t0 = Timer
-    Do While Not m_env.IsReady And Not m_env.IsFailed
-        DoEvents
-        If Timer - t0 > 15 Then Exit Function
-    Loop
-    If Not m_env.IsReady Then Exit Function
-
-    Dim targetHwnd As LongPtr
-    targetHwnd = GetAccessFormCanvasHwnd(Me)
-
-    Set m_pane = New Wv2Pane
-    m_pane.Init m_env, targetHwnd
-
-    t0 = Timer
-    Do While Not m_pane.IsReady And Not m_pane.IsFailed
-        DoEvents
-        If Timer - t0 > 15 Then Exit Function
-    Loop
-    If Not m_pane.IsReady Then Exit Function
-
-    If m_pane.Ctrl_GetCoreWebView2() <> 0 Then Exit Function
-
-    m_pane.View_AddNavigationStarting
-    m_pane.View_AddNavigationCompleted
-    m_pane.View_AddDocumentTitleChanged
-    m_pane.View_AddWebMessageReceived
-    m_pane.View_AddHistoryChanged
-    m_pane.View2_AddDOMContentLoaded
-
-    If Not hostObject Is Nothing Then
-        Set m_bridge = hostObject
-        m_pane.View_AddHostObjectToScript hostObjectName, m_bridge
+    Dim existing As clsWv2Host
+    Set existing = GetRegisteredAccessHost(m_hostHwnd)
+    If Not (existing Is Nothing) Then
+        UnregisterAccessHost m_hostHwnd
+        existing.Shutdown
+        Set existing = Nothing
     End If
 
-    ResizeViewport
-    m_pane.Ctrl_PutIsVisible True
+    Dim rc As RECT
+    GetAccessFormViewportRect Me, m_hostHwnd, rc
 
-    If m_pane.View3_SetVirtualHostNameToFolderMapping(virtualHostName, localFolderPath, 2) <> 0 Then
+    Set m_host = New clsWv2Host
+    RegisterAccessHost m_hostHwnd, m_host
+
+    If Not m_host.InitSpaOnHwnd( _
+        m_hostHwnd, rc, virtualHostName, localFolderPath, entryFile, _
+        hostObject, hostObjectName, userDataFolder) Then
+        UnregisterAccessHost m_hostHwnd
+        m_host.Shutdown
+        Set m_host = Nothing
         Exit Function
     End If
 
-    Dim targetUrl As String
-    targetUrl = "https://" & virtualHostName & "/" & entryFile
-    m_pane.View_Navigate targetUrl
-
+    SyncAccessWebViewZOrder Me, m_hostHwnd
     InitSpa = True
     Exit Function
 
@@ -101,35 +89,28 @@ ErrHandler:
 End Function
 
 Public Sub ResizeViewport()
-    If m_pane Is Nothing Then Exit Sub
-    If Not m_pane.IsReady Then Exit Sub
+    Dim h As clsWv2Host
+    Set h = EnsureHost()
+    If h Is Nothing Then Exit Sub
 
     Dim rc As RECT
-    Dim targetHwnd As LongPtr
-    targetHwnd = GetAccessFormCanvasHwnd(Me)
-    If GetClientRect(targetHwnd, rc) <> 0 Then
-        m_pane.Ctrl_PutBounds rc
+    If GetAccessFormViewportRect(Me, h.HostHwnd, rc) Then
+        h.UpdateBounds rc
+        SyncAccessWebViewZOrder Me, h.HostHwnd
     End If
 End Sub
 
 Public Sub ShutdownWebView()
     On Error Resume Next
-    If Not m_pane Is Nothing Then
-        m_pane.Ctrl_Close
-        Set m_pane = Nothing
+    Dim h As clsWv2Host
+    Set h = EnsureHost()
+    If Not (h Is Nothing) Then
+        UnregisterAccessHost h.HostHwnd
+        h.Shutdown
     End If
-    Set m_bridge = Nothing
-    Set m_env = Nothing
+    Set m_host = Nothing
+    m_hostHwnd = 0
     On Error GoTo 0
-End Sub
-
-Private Sub m_pane_WebMessageReceived(ByVal messageText As String, ByVal messageJson As String)
-    If Len(messageText) > 0 Then
-        m_lastWebMessage = messageText
-    Else
-        m_lastWebMessage = messageJson
-    End If
-    m_lastWebMessageJson = messageJson
 End Sub
 
 Private Sub Form_Resize()
@@ -137,7 +118,12 @@ Private Sub Form_Resize()
 End Sub
 
 Private Sub Form_Unload(Cancel As Integer)
-    ShutdownWebView
+    If IsSubformWindow(Me) Then
+        Dim h As clsWv2Host
+        Set h = EnsureHost()
+        If Not (h Is Nothing) Then h.ScheduleOrphanCheck
+        Set m_host = Nothing
+    Else
+        ShutdownWebView
+    End If
 End Sub
-
-

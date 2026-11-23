@@ -1690,6 +1690,14 @@ Public Function Ctrl_PutBounds(ByRef bounds As RECT) As Long
 #End If
 End Function
 
+Public Function Ctrl_NotifyParentWindowPositionChanged() As Long
+    If m_pCtrl = 0 Then
+        Ctrl_NotifyParentWindowPositionChanged = &H80004003
+        Exit Function
+    End If
+    Ctrl_NotifyParentWindowPositionChanged = dcf(m_pCtrl, 23, "Ctrl.NotifyParentWindowPositionChanged")
+End Function
+
 
 ' ============================================================
 ' Ctrl_PutIsVisible (ICoreWebView2Controller::put_IsVisible, vtable index 4)
